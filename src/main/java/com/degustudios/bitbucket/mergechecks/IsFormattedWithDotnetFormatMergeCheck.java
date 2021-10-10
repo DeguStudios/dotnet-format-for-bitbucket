@@ -2,36 +2,31 @@ package com.degustudios.bitbucket.mergechecks;
 
 import com.atlassian.bitbucket.content.ArchiveRequest;
 import com.atlassian.bitbucket.content.ContentService;
-import com.atlassian.bitbucket.hook.repository.*;
-import com.atlassian.bitbucket.i18n.I18nService;
-import com.atlassian.bitbucket.permission.Permission;
-import com.atlassian.bitbucket.permission.PermissionService;
+import com.atlassian.bitbucket.hook.repository.PreRepositoryHookContext;
+import com.atlassian.bitbucket.hook.repository.PullRequestMergeHookRequest;
+import com.atlassian.bitbucket.hook.repository.RepositoryHookResult;
+import com.atlassian.bitbucket.hook.repository.RepositoryMergeCheck;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Nonnull;
 import java.io.*;
-import java.nio.file.*;
-import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Enumeration;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.regex.*;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import javax.annotation.Nonnull;
 
 @Component("isFormattedWithDotnetFormatMergeCheck")
 public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeCheck {
-    private final I18nService i18nService;
     private final ContentService contentService;
 
     @Autowired
-    public IsFormattedWithDotnetFormatMergeCheck(@ComponentImport I18nService i18nService,
-                                                 @ComponentImport ContentService contentService) {
-        this.i18nService = i18nService;
+    public IsFormattedWithDotnetFormatMergeCheck(@ComponentImport ContentService contentService) {
         this.contentService = contentService;
     }
 
@@ -40,63 +35,77 @@ public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeChe
     public RepositoryHookResult preUpdate(@Nonnull PreRepositoryHookContext context,
                                           @Nonnull PullRequestMergeHookRequest request) {
         try {
-            Path tempFilePath = Files.createTempFile("bb", ".zip");
-            FileOutputStream fileOutputStream = new FileOutputStream(tempFilePath.toFile());
-            contentService.streamArchive(
-                    new ArchiveRequest.Builder(request.getRepository(), request.getFromRef().getLatestCommit()).build(),
-                    fileType -> fileOutputStream);
-            fileOutputStream.close();
+            Path archiveFilePath = Files.createTempFile("bb", ".zip");
+            Path extractedArchiveDirectoryPath = Files.createTempDirectory("bb");
 
-            Path tempDir = Files.createTempDirectory("bb");
-            ZipFile zipFile = new ZipFile(tempFilePath.toFile());
-            zipFile.stream().forEach(zipEntry -> {
-                File newFile = new File(tempDir.toString(), zipEntry.getName());
-                if (zipEntry.isDirectory()) {
-                    newFile.mkdirs();
-                }
-                else {
-                    try {
-                        InputStream zipFileInputStream = zipFile.getInputStream(zipEntry);
-                        OutputStream newFileOutputStream = new FileOutputStream(newFile);
-                        copy(zipFileInputStream, newFileOutputStream);
-                        zipFileInputStream.close();
-                        newFileOutputStream.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
+            downloadRepository(request.getRepository(), request.getFromRef().getLatestCommit(), archiveFilePath);
+            extractArchive(archiveFilePath, extractedArchiveDirectoryPath);
+            DotnetFormatCommandResult result = runDotnetFormat(extractedArchiveDirectoryPath);
 
-
-            String shell = "";
-            String executeSwitch = "";
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                shell = "cmd.exe";
-                executeSwitch = "/c";
-            } else {
-                shell = "sh";
-                executeSwitch = "-c";
+            if (result.getExitCode() != 0) {
+                return RepositoryHookResult.rejected("Dotnet format has found issues.", result.getMessage());
             }
-            ProcessBuilder builder = new ProcessBuilder();
-            Process process = builder
-                    .command(shell, executeSwitch, "dotnet format", "--check")
-                    .directory(tempDir.toFile())
-                    .start();
-            StringBuffer stringBuffer = new StringBuffer();
-            StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), s -> stringBuffer.append(s));
-            StreamGobbler streamGobbler2 = new StreamGobbler(process.getErrorStream(), s -> stringBuffer.append(s));
-            Executors.newSingleThreadExecutor().submit(streamGobbler);
-            Executors.newSingleThreadExecutor().submit(streamGobbler2);
-            int exitCode = process.waitFor();
-
-            if (exitCode != 0) {
-                return RepositoryHookResult.rejected("Dotnet format has found issues.", stringBuffer.toString());
-            }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return RepositoryHookResult.accepted();
+    }
+
+    private void extractArchive(Path archiveFilePath, Path extractedArchiveDirectoryPath) throws IOException {
+        ZipFile zipFile = new ZipFile(archiveFilePath.toFile());
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        while (entries.hasMoreElements()) {
+            extractZipFile(extractedArchiveDirectoryPath, zipFile, entries.nextElement());
+        }
+    }
+
+    private void extractZipFile(Path extractedArchiveDirectoryPath, ZipFile zipFile, ZipEntry zipEntry) throws IOException {
+        File newFile = new File(extractedArchiveDirectoryPath.toString(), zipEntry.getName());
+        if (zipEntry.isDirectory()) {
+            newFile.mkdirs();
+        } else {
+            InputStream zipFileInputStream = zipFile.getInputStream(zipEntry);
+            OutputStream newFileOutputStream = new FileOutputStream(newFile);
+            copy(zipFileInputStream, newFileOutputStream);
+            zipFileInputStream.close();
+            newFileOutputStream.close();
+        }
+    }
+
+    private void downloadRepository(Repository repository, String commitId, Path filePath) throws IOException {
+        FileOutputStream fileOutputStream = new FileOutputStream(filePath.toFile());
+        contentService.streamArchive(
+                new ArchiveRequest.Builder(repository, commitId).build(),
+                fileType -> fileOutputStream);
+        fileOutputStream.close();
+    }
+
+    private DotnetFormatCommandResult runDotnetFormat(Path workingDirectory) throws IOException, InterruptedException {
+        String shell = "";
+        String executeSwitch = "";
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            shell = "cmd.exe";
+            executeSwitch = "/c";
+        } else {
+            shell = "sh";
+            executeSwitch = "-c";
+        }
+
+        ProcessBuilder builder = new ProcessBuilder();
+        Process process = builder
+                .command(shell, executeSwitch, "dotnet format", "--check")
+                .directory(workingDirectory.toFile())
+                .start();
+
+        StringBuffer messageBuffer = new StringBuffer();
+        StreamGobbler inputStreamGobbler = new StreamGobbler(process.getInputStream(), s -> messageBuffer.append(s));
+        StreamGobbler errorStreamGobbler = new StreamGobbler(process.getErrorStream(), s -> messageBuffer.append(s));
+        Executors.newSingleThreadExecutor().submit(inputStreamGobbler);
+        Executors.newSingleThreadExecutor().submit(errorStreamGobbler);
+        int exitCode = process.waitFor();
+
+        return new DotnetFormatCommandResult(exitCode, messageBuffer.toString());
     }
 
     private void copy(InputStream source, OutputStream target) throws IOException {

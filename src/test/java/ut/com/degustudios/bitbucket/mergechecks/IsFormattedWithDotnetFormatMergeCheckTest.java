@@ -24,8 +24,6 @@ import com.atlassian.bitbucket.setting.Settings;
 public class IsFormattedWithDotnetFormatMergeCheckTest
 {
     @Mock
-    private I18nService i18nService;
-    @Mock
     private ContentService contentService;
     @Mock
     private PreRepositoryHookContext context;
@@ -34,14 +32,9 @@ public class IsFormattedWithDotnetFormatMergeCheckTest
 
     private IsFormattedWithDotnetFormatMergeCheck checker;
 
-    @Before 
-    public void initialize() {
-        checker = new IsFormattedWithDotnetFormatMergeCheck(i18nService, contentService);
-    }
-
     @Test
     public void canCreateInstance()
     {
-        new IsFormattedWithDotnetFormatMergeCheck(i18nService, contentService);
+        new IsFormattedWithDotnetFormatMergeCheck(contentService);
     }
 }
