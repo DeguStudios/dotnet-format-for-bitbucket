@@ -1,6 +1,4 @@
-package com.degustudios.bitbucket.mergechecks;
-
-import java.io.IOException;
+package com.degustudios.dotnetformat;
 
 public class DotnetFormatCommandResult {
     private int exitCode;

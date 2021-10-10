@@ -1,9 +1,10 @@
-package com.degustudios.bitbucket.mergechecks;
+package com.degustudios.bitbucket.content;
 
 import com.atlassian.bitbucket.content.ArchiveRequest;
 import com.atlassian.bitbucket.content.ContentService;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,26 +25,44 @@ public class CodeService {
     }
 
     public boolean tryDownloadRepositoryCode(Path extractedArchiveDirectoryPath, Repository repository, String commitId) {
+        Path archiveFilePath = null;
         try {
-            downloadRepositoryCode(extractedArchiveDirectoryPath, repository, commitId);
+            archiveFilePath = Files.createTempFile("archive", ".zip");
+            downloadRepositoryCode(
+                    extractedArchiveDirectoryPath,
+                    archiveFilePath,
+                    repository,
+                    commitId);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
             return false;
+        } finally {
+            cleanUp(archiveFilePath);
         }
     }
 
-    private void downloadRepositoryCode(Path extractedArchiveDirectoryPath, Repository repository, String commitId) throws IOException {
-        Path archiveFilePath = Files.createTempFile("archive", ".zip");
+    private void cleanUp(Path archiveFilePath) {
+        if (archiveFilePath != null && Files.exists(archiveFilePath)) {
+            try {
+                Files.delete(archiveFilePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void downloadRepositoryCode(Path extractedArchiveDirectoryPath, Path archiveFilePath, Repository repository, String commitId) throws IOException {
         downloadRepository(repository, commitId, archiveFilePath);
         extractArchive(archiveFilePath, extractedArchiveDirectoryPath);
     }
 
     private void extractArchive(Path archiveFilePath, Path extractedArchiveDirectoryPath) throws IOException {
-        ZipFile zipFile = new ZipFile(archiveFilePath.toFile());
-        Enumeration<? extends ZipEntry> entries = zipFile.entries();
-        while (entries.hasMoreElements()) {
-            extractZipFile(extractedArchiveDirectoryPath, zipFile, entries.nextElement());
+        try (ZipFile zipFile = new ZipFile(archiveFilePath.toFile())) {
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                extractZipFile(extractedArchiveDirectoryPath, zipFile, entries.nextElement());
+            }
         }
     }
 
@@ -52,11 +71,11 @@ public class CodeService {
         if (zipEntry.isDirectory()) {
             newFile.mkdirs();
         } else {
-            InputStream zipFileInputStream = zipFile.getInputStream(zipEntry);
-            OutputStream newFileOutputStream = new FileOutputStream(newFile);
-            copy(zipFileInputStream, newFileOutputStream);
-            zipFileInputStream.close();
-            newFileOutputStream.close();
+            try (InputStream zipFileInputStream = zipFile.getInputStream(zipEntry)) {
+                try(OutputStream newFileOutputStream = new FileOutputStream(newFile)) {
+                    copy(zipFileInputStream, newFileOutputStream);
+                }
+            }
         }
     }
 

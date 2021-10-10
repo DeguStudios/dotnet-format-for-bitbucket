@@ -2,12 +2,13 @@ package ut.com.degustudios.bitbucket.mergechecks;
 
 import com.atlassian.bitbucket.pull.PullRequestRef;
 import com.atlassian.bitbucket.repository.Repository;
-import com.degustudios.bitbucket.mergechecks.CodeService;
-import com.degustudios.bitbucket.mergechecks.DotnetFormatCommandResult;
-import com.degustudios.bitbucket.mergechecks.DotnetFormatRunner;
+import com.degustudios.bitbucket.content.CodeService;
+import com.degustudios.dotnetformat.DotnetFormatCommandResult;
+import com.degustudios.dotnetformat.DotnetFormatRunner;
 import org.junit.Test;
 import org.junit.Before;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -15,6 +16,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.Assert.assertEquals;
@@ -96,6 +99,51 @@ public class IsFormattedWithDotnetFormatMergeCheckTest
         assertThat(
                 getVeto(pullRequestResult).getDetailedMessage(),
                 is("Downloading code failed. Check log file for more information."));
+    }
+
+    @Test
+    public void cleansUpTemporaryDirectoryAfterFailingDownload()
+    {
+        ArgumentCaptor<Path> temporaryDirectoryCaptor = ArgumentCaptor.forClass(Path.class);
+        setupCodeServiceToFailDownload();
+
+        runChecker();
+
+        verify(codeService).tryDownloadRepositoryCode(temporaryDirectoryCaptor.capture(), eq(repository), eq(commitId));
+        assertThat(Files.exists(temporaryDirectoryCaptor.getValue()), is(false));
+    }
+
+    @Test
+    public void cleansUpTemporaryDirectoryAfterCorrectDownload()
+    {
+        ArgumentCaptor<Path> temporaryDirectoryCaptor = ArgumentCaptor.forClass(Path.class);
+        setupCodeServiceToAllowDownload();
+        setupDotnetFormatRunnerToReturn(0, "OK!");
+
+        runChecker();
+
+        verify(codeService).tryDownloadRepositoryCode(temporaryDirectoryCaptor.capture(), eq(repository), eq(commitId));
+        assertThat(Files.exists(temporaryDirectoryCaptor.getValue()), is(false));
+    }
+
+    @Test
+    public void cleansUpNonEmptyTemporaryDirectoryCorrectly()
+    {
+        ArgumentCaptor<Path> temporaryDirectoryCaptor = ArgumentCaptor.forClass(Path.class);
+
+        setupDotnetFormatRunnerToReturn(0, "OK!");
+        when(codeService.tryDownloadRepositoryCode(notNull(Path.class), eq(repository), eq(commitId)))
+                .thenAnswer(invocationOnMock -> {
+                    Path temporaryDirectory = (Path) invocationOnMock.getArguments()[0];
+                    File file = new File(new File(temporaryDirectory.toString()), "placeholder.txt");
+                    file.createNewFile();
+                    return true;
+                });
+
+        runChecker();
+
+        verify(codeService).tryDownloadRepositoryCode(temporaryDirectoryCaptor.capture(), eq(repository), eq(commitId));
+        assertThat(Files.exists(temporaryDirectoryCaptor.getValue()), is(false));
     }
 
     private RepositoryHookVeto getVeto(RepositoryHookResult pullRequestResult) {
