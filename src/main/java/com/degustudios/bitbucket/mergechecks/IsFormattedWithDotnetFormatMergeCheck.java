@@ -17,11 +17,12 @@ import java.nio.file.Path;
 @Component("isFormattedWithDotnetFormatMergeCheck")
 public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeCheck {
     private final CodeService codeService;
-    private final DotnetFormatRunner dotnetFormatRunner = new DotnetFormatRunner();
+    private final DotnetFormatRunner dotnetFormatRunner;
 
     @Autowired
-    public IsFormattedWithDotnetFormatMergeCheck(@ComponentImport ContentService contentService) {
+    public IsFormattedWithDotnetFormatMergeCheck(ContentService contentService, DotnetFormatRunner dotnetFormatRunner) {
         this.codeService = new CodeService(contentService);
+        this.dotnetFormatRunner = dotnetFormatRunner;
     }
 
     @Nonnull
@@ -30,7 +31,7 @@ public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeChe
                                           @Nonnull PullRequestMergeHookRequest request) {
         try {
             Path codebaseDirectoryPath = Files.createTempDirectory("bb");
-            
+
             DotnetFormatCommandResult result = runDotnetFormat(request, codebaseDirectoryPath);
 
             if (result.getExitCode() != 0) {

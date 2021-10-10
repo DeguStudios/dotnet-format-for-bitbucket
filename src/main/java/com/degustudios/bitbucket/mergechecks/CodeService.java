@@ -3,6 +3,8 @@ package com.degustudios.bitbucket.mergechecks;
 import com.atlassian.bitbucket.content.ArchiveRequest;
 import com.atlassian.bitbucket.content.ContentService;
 import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -14,7 +16,8 @@ import java.util.zip.ZipFile;
 public class CodeService {
     private final ContentService contentService;
 
-    public CodeService(ContentService contentService) {
+    @Autowired
+    public CodeService(@ComponentImport ContentService contentService) {
         this.contentService = contentService;
     }
 

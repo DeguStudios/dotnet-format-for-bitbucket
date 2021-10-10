@@ -1,6 +1,7 @@
 package ut.com.degustudios.bitbucket.mergechecks;
 
 import com.atlassian.bitbucket.content.ContentService;
+import com.degustudios.bitbucket.mergechecks.DotnetFormatRunner;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -26,6 +27,8 @@ public class IsFormattedWithDotnetFormatMergeCheckTest
     @Mock
     private ContentService contentService;
     @Mock
+    private DotnetFormatRunner dotnetFormatRunner;
+    @Mock
     private PreRepositoryHookContext context;
     @Mock
     private PullRequestMergeHookRequest request;
@@ -35,6 +38,6 @@ public class IsFormattedWithDotnetFormatMergeCheckTest
     @Test
     public void canCreateInstance()
     {
-        new IsFormattedWithDotnetFormatMergeCheck(contentService);
+        new IsFormattedWithDotnetFormatMergeCheck(contentService, dotnetFormatRunner);
     }
 }

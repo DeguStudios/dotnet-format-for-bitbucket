@@ -1,5 +1,7 @@
 package com.degustudios.bitbucket.mergechecks;
 
+import org.springframework.stereotype.Service;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +10,7 @@ import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+@Service
 public class DotnetFormatRunner {
     public DotnetFormatRunner() {
     }
