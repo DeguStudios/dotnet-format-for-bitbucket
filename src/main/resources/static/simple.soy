@@ -1,0 +1,17 @@
+{namespace com.degustudios.bitbucket.mergechecks}
+
+/**
+ * @param config
+ * @param errors
+ */
+{template .formContents}
+    {call aui.form.textField}
+        {param id: 'dotnetFormatParams' /}
+		{param labelContent: 'Additional parameters' /}
+		{param value:$config ? $config['dotnetFormatParams'] : null /}
+		{param descriptionText: 'Additional parameters passed into dotnet-format command.' /}
+        {param extraClasses: 'long-field' /}
+        {param isRequired: 'false' /}
+		{param errorTexts: $errors ? $errors['dotnetFormatParams'] : null /}
+    {/call}
+{/template}
