@@ -1,0 +1,25 @@
+<atlassian-plugin key="${atlassian.plugin.key}" name="${project.name}" plugins-version="2">
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${project.organization.name}" url="${project.organization.url}"/>
+        <param name="plugin-icon">images/pluginLogo.png</param>
+        <param name="plugin-logo">images/pluginLogo.png</param>
+    </plugin-info>
+
+    <resource type="i18n" name="i18n" location="dotnet-format-for-bitbucket"/>
+
+    <repository-hook name="Merge checker hook" key="isFormattedWithDotnetFormatMergeCheck" class="bean:isFormattedWithDotnetFormatMergeCheck">
+        <description>Runs checks before a PR is merged</description>
+        <icon>images/pluginLogo.png</icon>
+        <scopes>
+            <scope>project</scope>
+            <scope>repository</scope>
+        </scopes>
+        <config-form name="Simple Hook Config" key="simpleHook-config">
+            <view>com.degustudios.bitbucket.mergechecks.formContents</view>
+            <directory location="/static/"/>
+        </config-form>
+        <validator>com.degustudios.bitbucket.mergechecks.IsFormattedWithDotnetFormatSettingsValidator</validator>
+    </repository-hook>
+</atlassian-plugin>
