@@ -4,6 +4,10 @@ import com.atlassian.bitbucket.hook.repository.PreRepositoryHookContext;
 import com.atlassian.bitbucket.hook.repository.PullRequestMergeHookRequest;
 import com.atlassian.bitbucket.hook.repository.RepositoryHookResult;
 import com.atlassian.bitbucket.hook.repository.RepositoryMergeCheck;
+import com.degustudios.bitbucket.content.CodeService;
+import com.degustudios.dotnetformat.DotnetFormatCommandResult;
+import com.degustudios.dotnetformat.DotnetFormatRunner;
+import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,20 +32,35 @@ public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeChe
     @Override
     public RepositoryHookResult preUpdate(@Nonnull PreRepositoryHookContext context,
                                           @Nonnull PullRequestMergeHookRequest request) {
-        Path codebaseDirectoryPath;
+        Path codebaseDirectoryPath = null;
         try {
             codebaseDirectoryPath = Files.createTempDirectory("bb");
+            return checkPullRequestWithDotnetFormat(request, codebaseDirectoryPath);
         } catch (IOException e) {
             e.printStackTrace();
             return RepositoryHookResult.rejected(rejectedSummaryMessage, e.getMessage());
+        } finally {
+            cleanUp(codebaseDirectoryPath);
         }
+    }
 
+    private RepositoryHookResult checkPullRequestWithDotnetFormat(PullRequestMergeHookRequest request, Path codebaseDirectoryPath) {
         DotnetFormatCommandResult result = runDotnetFormat(request, codebaseDirectoryPath);
 
         if (result.getExitCode() == 0) {
             return RepositoryHookResult.accepted();
         } else {
             return RepositoryHookResult.rejected(rejectedSummaryMessage, result.getMessage());
+        }
+    }
+
+    private void cleanUp(Path codebaseDirectoryPath) {
+        if (codebaseDirectoryPath != null && Files.exists(codebaseDirectoryPath)) {
+            try {
+                FileUtils.deleteDirectory(new File(codebaseDirectoryPath.toString()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

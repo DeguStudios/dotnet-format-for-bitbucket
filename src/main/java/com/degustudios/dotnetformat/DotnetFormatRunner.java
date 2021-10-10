@@ -1,4 +1,4 @@
-package com.degustudios.bitbucket.mergechecks;
+package com.degustudios.dotnetformat;
 
 import org.springframework.stereotype.Service;
 
