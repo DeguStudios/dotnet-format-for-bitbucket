@@ -15,7 +15,7 @@ public class DotnetFormatRunner {
     public DotnetFormatRunner() {
     }
 
-    DotnetFormatCommandResult runDotnetFormat(Path workingDirectory) throws IOException, InterruptedException {
+    public DotnetFormatCommandResult runDotnetFormat(Path workingDirectory) {
         String shell = "";
         String executeSwitch = "";
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
@@ -27,17 +27,30 @@ public class DotnetFormatRunner {
         }
 
         ProcessBuilder builder = new ProcessBuilder();
-        Process process = builder
-                .command(shell, executeSwitch, "dotnet format", "--check")
-                .directory(workingDirectory.toFile())
-                .start();
+        Process process = null;
+        try {
+            process = builder
+                    .command(shell, executeSwitch, "dotnet format", "--check")
+                    .directory(workingDirectory.toFile())
+                    .start();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return DotnetFormatCommandResult.failed(e);
+        }
 
         StringBuffer messageBuffer = new StringBuffer();
         StreamGobbler inputStreamGobbler = new StreamGobbler(process.getInputStream(), s -> messageBuffer.append(s));
         StreamGobbler errorStreamGobbler = new StreamGobbler(process.getErrorStream(), s -> messageBuffer.append(s));
         Executors.newSingleThreadExecutor().submit(inputStreamGobbler);
         Executors.newSingleThreadExecutor().submit(errorStreamGobbler);
-        int exitCode = process.waitFor();
+
+        int exitCode = 0;
+        try {
+            exitCode = process.waitFor();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return DotnetFormatCommandResult.failed(e);
+        }
 
         return new DotnetFormatCommandResult(exitCode, messageBuffer.toString());
     }

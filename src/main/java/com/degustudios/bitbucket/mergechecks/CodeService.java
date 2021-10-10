@@ -5,6 +5,7 @@ import com.atlassian.bitbucket.content.ContentService;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -13,6 +14,7 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+@Service
 public class CodeService {
     private final ContentService contentService;
 
@@ -21,7 +23,17 @@ public class CodeService {
         this.contentService = contentService;
     }
 
-    void downloadRepositoryCode(Path extractedArchiveDirectoryPath, Repository repository, String commitId) throws IOException {
+    public boolean tryDownloadRepositoryCode(Path extractedArchiveDirectoryPath, Repository repository, String commitId) {
+        try {
+            downloadRepositoryCode(extractedArchiveDirectoryPath, repository, commitId);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void downloadRepositoryCode(Path extractedArchiveDirectoryPath, Repository repository, String commitId) throws IOException {
         Path archiveFilePath = Files.createTempFile("archive", ".zip");
         downloadRepository(repository, commitId, archiveFilePath);
         extractArchive(archiveFilePath, extractedArchiveDirectoryPath);
