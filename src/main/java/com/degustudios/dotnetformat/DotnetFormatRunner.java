@@ -52,7 +52,9 @@ public class DotnetFormatRunner {
             return DotnetFormatCommandResult.failed(e);
         }
 
-        return new DotnetFormatCommandResult(exitCode, messageBuffer.toString());
+        return DotnetFormatCommandResult.executedCorrectly(
+                exitCode,
+                messageBuffer.toString());
     }
 
     private static class StreamGobbler implements Runnable {

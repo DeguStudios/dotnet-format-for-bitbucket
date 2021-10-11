@@ -5,9 +5,11 @@ import com.atlassian.bitbucket.hook.repository.PullRequestMergeHookRequest;
 import com.atlassian.bitbucket.hook.repository.RepositoryHookResult;
 import com.atlassian.bitbucket.hook.repository.RepositoryMergeCheck;
 import com.degustudios.bitbucket.content.CodeService;
-import com.degustudios.bitbucket.repository.validators.DotnetFormatRefValidator;
+import com.degustudios.bitbucket.repository.validators.DotnetFormatRefValidatorImpl;
+import com.degustudios.bitbucket.repository.validators.IdempotentlyCachedDotnetFormatRefValidatorWrapper;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import com.degustudios.dotnetformat.DotnetFormatRunner;
+import com.degustudios.executors.IdempotentExecutorBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +22,9 @@ public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeChe
 
     @Autowired
     public IsFormattedWithDotnetFormatMergeCheck(CodeService codeService, DotnetFormatRunner dotnetFormatRunner) {
-        this.dotnetFormatRefValidator = new DotnetFormatRefValidator(codeService, dotnetFormatRunner);
+        this.dotnetFormatRefValidator = new IdempotentlyCachedDotnetFormatRefValidatorWrapper(
+                new DotnetFormatRefValidatorImpl(codeService, dotnetFormatRunner),
+                new IdempotentExecutorBuilder());
     }
 
     @Nonnull

@@ -154,8 +154,8 @@ public class IsFormattedWithDotnetFormatMergeCheckTest
         return checker.preUpdate(context, request);
     }
 
-    private void setupDotnetFormatRunnerToReturn(int i, String s) {
-        DotnetFormatCommandResult commandResult = new DotnetFormatCommandResult(i, s);
+    private void setupDotnetFormatRunnerToReturn(int exitCode, String message) {
+        DotnetFormatCommandResult commandResult = DotnetFormatCommandResult.executedCorrectly(exitCode, message);
         when(dotnetFormatRunner.runDotnetFormat(notNull(Path.class))).thenReturn(commandResult);
     }
 

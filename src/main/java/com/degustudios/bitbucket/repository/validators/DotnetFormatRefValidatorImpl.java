@@ -3,6 +3,7 @@ package com.degustudios.bitbucket.repository.validators;
 import com.atlassian.bitbucket.pull.PullRequestRef;
 import com.atlassian.bitbucket.repository.RepositoryRef;
 import com.degustudios.bitbucket.content.CodeService;
+import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidator;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import com.degustudios.dotnetformat.DotnetFormatRunner;
 import org.apache.commons.io.FileUtils;
@@ -12,15 +13,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class DotnetFormatRefValidator {
+public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
     private final CodeService codeService;
     private final DotnetFormatRunner dotnetFormatRunner;
 
-    public DotnetFormatRefValidator(CodeService codeService, DotnetFormatRunner dotnetFormatRunner) {
+    public DotnetFormatRefValidatorImpl(CodeService codeService, DotnetFormatRunner dotnetFormatRunner) {
         this.codeService = codeService;
         this.dotnetFormatRunner = dotnetFormatRunner;
     }
 
+    @Override
     public DotnetFormatCommandResult validate(RepositoryRef ref) {
         Path codebaseDirectoryPath = null;
         try {
@@ -28,7 +30,7 @@ public class DotnetFormatRefValidator {
             return runDotnetFormat(ref, codebaseDirectoryPath);
         } catch (IOException e) {
             e.printStackTrace();
-            return new DotnetFormatCommandResult(-1, e.getMessage());
+            return DotnetFormatCommandResult.executedCorrectly(-1, e.getMessage());
         } finally {
             cleanUp(codebaseDirectoryPath);
         }
@@ -51,7 +53,9 @@ public class DotnetFormatRefValidator {
                 ref.getLatestCommit())) {
             return dotnetFormatRunner.runDotnetFormat(codebaseDirectoryPath);
         } else {
-            return new DotnetFormatCommandResult(-1, "Downloading code failed. Check log file for more information.");
+            return DotnetFormatCommandResult.executedCorrectly(
+                    -1,
+                    "Downloading code failed. Check log file for more information.");
         }
     }
 }
