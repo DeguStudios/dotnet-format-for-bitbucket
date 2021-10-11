@@ -29,6 +29,10 @@ public class DotnetFormatCommandResult {
                 false);
     }
 
+    public static DotnetFormatCommandResult failed(String message) {
+        return new DotnetFormatCommandResult(-1, message, null, false);
+    }
+
     public int getExitCode() {
         return exitCode;
     }

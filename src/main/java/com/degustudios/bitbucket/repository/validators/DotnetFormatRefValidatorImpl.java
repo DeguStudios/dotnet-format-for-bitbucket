@@ -53,9 +53,7 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
                 ref.getLatestCommit())) {
             return dotnetFormatRunner.runDotnetFormat(codebaseDirectoryPath);
         } else {
-            return DotnetFormatCommandResult.executedCorrectly(
-                    -1,
-                    "Downloading code failed. Check log file for more information.");
+            return DotnetFormatCommandResult.failed("Downloading code failed. Check log file for more information.");
         }
     }
 }
