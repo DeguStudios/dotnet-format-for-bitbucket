@@ -4,7 +4,6 @@ import com.atlassian.bitbucket.content.ArchiveRequest;
 import com.atlassian.bitbucket.content.ContentService;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -72,7 +71,7 @@ public class CodeService {
             newFile.mkdirs();
         } else {
             try (InputStream zipFileInputStream = zipFile.getInputStream(zipEntry)) {
-                try(OutputStream newFileOutputStream = new FileOutputStream(newFile)) {
+                try (OutputStream newFileOutputStream = new FileOutputStream(newFile)) {
                     copy(zipFileInputStream, newFileOutputStream);
                 }
             }
@@ -80,11 +79,11 @@ public class CodeService {
     }
 
     private void downloadRepository(Repository repository, String commitId, Path filePath) throws IOException {
-        FileOutputStream fileOutputStream = new FileOutputStream(filePath.toFile());
-        contentService.streamArchive(
-                new ArchiveRequest.Builder(repository, commitId).build(),
-                fileType -> fileOutputStream);
-        fileOutputStream.close();
+        try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toFile())) {
+            contentService.streamArchive(
+                    new ArchiveRequest.Builder(repository, commitId).build(),
+                    fileType -> fileOutputStream);
+        }
     }
 
     private void copy(InputStream source, OutputStream target) throws IOException {

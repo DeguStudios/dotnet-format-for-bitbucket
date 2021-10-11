@@ -6,14 +6,19 @@ import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import com.degustudios.executors.IdempotentExecutor;
 import com.degustudios.executors.IdempotentExecutorBuilder;
 import org.apache.commons.lang3.concurrent.ConcurrentException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ExecutionException;
 
+@Service("IdempotentlyCachedDotnetFormatRefValidatorWrapper")
 public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements DotnetFormatRefValidator {
     private final IdempotentExecutor<RepositoryRef, DotnetFormatCommandResult> executor;
 
+    @Autowired
     public IdempotentlyCachedDotnetFormatRefValidatorWrapper(
-            DotnetFormatRefValidator validator,
+            @Qualifier("DotnetFormatRefValidatorImpl") DotnetFormatRefValidator validator,
             IdempotentExecutorBuilder executorBuilder) {
         this.executor = executorBuilder.build(
                 validator::validate,
@@ -23,13 +28,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements Dotnet
     public DotnetFormatCommandResult validate(RepositoryRef ref) {
         try {
             return executor.execute(ref).get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return DotnetFormatCommandResult.failed(e);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-            return DotnetFormatCommandResult.failed(e);
-        } catch (ConcurrentException e) {
+        } catch (InterruptedException | ExecutionException | ConcurrentException e) {
             e.printStackTrace();
             return DotnetFormatCommandResult.failed(e);
         }

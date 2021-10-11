@@ -1,20 +1,16 @@
 package com.degustudios.dotnetformat;
 
 public class DotnetFormatCommandResult {
-    private int exitCode;
-    private String message;
-    private Exception exception;
-    private boolean hasExecutedCorrectly;
+    private final int exitCode;
+    private final String message;
+    private final Exception exception;
+    private final boolean hasExecutedCorrectly;
 
     private DotnetFormatCommandResult(int exitCode, String message, Exception exception, boolean hasExecutedCorrectly) {
         this.exitCode = exitCode;
         this.message = message;
         this.exception = exception;
         this.hasExecutedCorrectly = hasExecutedCorrectly;
-    }
-
-    private DotnetFormatCommandResult(int exitCode, String message, boolean hasExecutedCorrectly) {
-        this(exitCode, message, null, hasExecutedCorrectly);
     }
 
     public static DotnetFormatCommandResult executedCorrectly(int exitCode, String message) {

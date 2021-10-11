@@ -1,29 +1,23 @@
 package ut.com.degustudios.bitbucket.mergechecks;
 
+import com.atlassian.bitbucket.hook.repository.PreRepositoryHookContext;
+import com.atlassian.bitbucket.hook.repository.PullRequestMergeHookRequest;
+import com.atlassian.bitbucket.hook.repository.RepositoryHookResult;
+import com.atlassian.bitbucket.hook.repository.RepositoryHookVeto;
 import com.atlassian.bitbucket.pull.PullRequestRef;
-import com.atlassian.bitbucket.repository.Repository;
-import com.atlassian.bitbucket.repository.RepositoryRef;
 import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidator;
+import com.degustudios.bitbucket.mergechecks.IsFormattedWithDotnetFormatMergeCheck;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
-import org.junit.Test;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-import static org.junit.Assert.assertEquals;
-
-import com.atlassian.bitbucket.hook.repository.*;
-import com.degustudios.bitbucket.mergechecks.IsFormattedWithDotnetFormatMergeCheck;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.when;
 
 
 @RunWith (MockitoJUnitRunner.class)

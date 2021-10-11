@@ -1,10 +1,5 @@
 package ut.com.degustudios.bitbucket.respository.validators;
 
-import com.atlassian.bitbucket.hook.repository.PreRepositoryHookContext;
-import com.atlassian.bitbucket.hook.repository.PullRequestMergeHookRequest;
-import com.atlassian.bitbucket.hook.repository.RepositoryHookResult;
-import com.atlassian.bitbucket.hook.repository.RepositoryHookVeto;
-import com.atlassian.bitbucket.pull.PullRequestRef;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.repository.RepositoryRef;
 import com.degustudios.bitbucket.content.CodeService;
@@ -31,8 +26,8 @@ import static org.mockito.Mockito.*;
 @RunWith (MockitoJUnitRunner.class)
 public class DotnetFormatRefValidatorImplTest
 {
-    private final String commitId = "ref/master/1";
-    private final int repositoryId = 123;
+    private static final String commitId = "ref/master/1";
+    private static final int repositoryId = 123;
 
     @Mock
     private CodeService codeService;
@@ -59,7 +54,7 @@ public class DotnetFormatRefValidatorImplTest
     public void returnsDotnetFormatResultWhenCodeIsDownloadedCorrectly()
     {
         setupCodeServiceToAllowDownload();
-        DotnetFormatCommandResult expectedResult = setupDotnetFormatRunnerToReturn(0, "SUCCESS!");
+        DotnetFormatCommandResult expectedResult = setupDotnetFormatRunnerToReturn(-1, "ERROR!");
 
         DotnetFormatCommandResult actualResult = runValidator();
 

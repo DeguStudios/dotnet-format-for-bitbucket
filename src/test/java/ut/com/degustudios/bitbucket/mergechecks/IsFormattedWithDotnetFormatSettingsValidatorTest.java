@@ -16,7 +16,7 @@ import com.atlassian.bitbucket.setting.Settings;
 @RunWith (MockitoJUnitRunner.class)
 public class IsFormattedWithDotnetFormatSettingsValidatorTest
 {
-    private final String AdditionalParamsSettingKey = "dotnetFormatParams";
+    private static final String AdditionalParamsSettingKey = "dotnetFormatParams";
 
     @Mock
     private Settings settings;

@@ -6,6 +6,7 @@ import com.atlassian.bitbucket.hook.repository.RepositoryHookResult;
 import com.atlassian.bitbucket.hook.repository.RepositoryMergeCheck;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
@@ -17,7 +18,8 @@ public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeChe
     private final DotnetFormatRefValidator dotnetFormatRefValidator;
 
     @Autowired
-    public IsFormattedWithDotnetFormatMergeCheck(DotnetFormatRefValidator validator) {
+    public IsFormattedWithDotnetFormatMergeCheck(
+            @Qualifier("IdempotentlyCachedDotnetFormatRefValidatorWrapper") DotnetFormatRefValidator validator) {
         this.dotnetFormatRefValidator = validator;
     }
 
