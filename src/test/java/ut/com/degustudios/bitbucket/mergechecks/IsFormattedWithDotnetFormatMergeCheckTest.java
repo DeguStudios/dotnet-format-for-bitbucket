@@ -49,9 +49,9 @@ public class IsFormattedWithDotnetFormatMergeCheckTest
     @Before
     public void initialize()
     {
-        when(request.getRepository()).thenReturn(repository);
         when(request.getFromRef()).thenReturn(pullRequestRef);
         when(pullRequestRef.getLatestCommit()).thenReturn(commitId);
+        when(pullRequestRef.getRepository()).thenReturn(repository);
 
         checker = new IsFormattedWithDotnetFormatMergeCheck(codeService, dotnetFormatRunner);
     }
