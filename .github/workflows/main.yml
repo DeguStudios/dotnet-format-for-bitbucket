@@ -39,3 +39,10 @@ jobs:
         uses: rodrigo-nogues/github-action-install-atlassian-sdk@v1
       # Compile the plugin
       - run: atlas-package
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          # Artifact name
+          name: 'dotnet-format-for-bitbucket.jar'
+          # A file, directory or wildcard pattern that describes what to upload
+          path: 'target/dotnet-format-for-bitbucket-*.jar'
