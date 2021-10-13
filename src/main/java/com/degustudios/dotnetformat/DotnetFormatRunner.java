@@ -16,8 +16,8 @@ public class DotnetFormatRunner {
     }
 
     public DotnetFormatCommandResult runDotnetFormat(Path workingDirectory) {
-        String shell = "";
-        String executeSwitch = "";
+        String shell;
+        String executeSwitch;
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
             shell = "cmd.exe";
             executeSwitch = "/c";
@@ -27,7 +27,7 @@ public class DotnetFormatRunner {
         }
 
         ProcessBuilder builder = new ProcessBuilder();
-        Process process = null;
+        Process process;
         try {
             process = builder
                     .command(shell, executeSwitch, "dotnet format", "--check")
@@ -38,13 +38,13 @@ public class DotnetFormatRunner {
             return DotnetFormatCommandResult.failed(e);
         }
 
-        StringBuffer messageBuffer = new StringBuffer();
-        StreamGobbler inputStreamGobbler = new StreamGobbler(process.getInputStream(), s -> messageBuffer.append(s));
-        StreamGobbler errorStreamGobbler = new StreamGobbler(process.getErrorStream(), s -> messageBuffer.append(s));
+        StringBuilder messageBuffer = new StringBuilder();
+        StreamGobbler inputStreamGobbler = new StreamGobbler(process.getInputStream(), messageBuffer::append);
+        StreamGobbler errorStreamGobbler = new StreamGobbler(process.getErrorStream(), messageBuffer::append);
         Executors.newSingleThreadExecutor().submit(inputStreamGobbler);
         Executors.newSingleThreadExecutor().submit(errorStreamGobbler);
 
-        int exitCode = 0;
+        int exitCode;
         try {
             exitCode = process.waitFor();
         } catch (InterruptedException e) {
@@ -52,12 +52,14 @@ public class DotnetFormatRunner {
             return DotnetFormatCommandResult.failed(e);
         }
 
-        return new DotnetFormatCommandResult(exitCode, messageBuffer.toString());
+        return DotnetFormatCommandResult.executedCorrectly(
+                exitCode,
+                messageBuffer.toString());
     }
 
     private static class StreamGobbler implements Runnable {
-        private InputStream inputStream;
-        private Consumer<String> consumer;
+        private final InputStream inputStream;
+        private final Consumer<String> consumer;
 
         public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
             this.inputStream = inputStream;

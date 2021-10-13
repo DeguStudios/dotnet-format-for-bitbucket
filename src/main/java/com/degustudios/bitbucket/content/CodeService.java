@@ -2,9 +2,10 @@ package com.degustudios.bitbucket.content;
 
 import com.atlassian.bitbucket.content.ArchiveRequest;
 import com.atlassian.bitbucket.content.ContentService;
+import com.atlassian.bitbucket.permission.Permission;
 import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +19,12 @@ import java.util.zip.ZipFile;
 @Service
 public class CodeService {
     private final ContentService contentService;
+    private final SecurityService securityService;
 
     @Autowired
-    public CodeService(@ComponentImport ContentService contentService) {
+    public CodeService(@ComponentImport ContentService contentService, @ComponentImport SecurityService securityService) {
         this.contentService = contentService;
+        this.securityService = securityService;
     }
 
     public boolean tryDownloadRepositoryCode(Path extractedArchiveDirectoryPath, Repository repository, String commitId) {
@@ -53,7 +56,10 @@ public class CodeService {
     }
 
     private void downloadRepositoryCode(Path extractedArchiveDirectoryPath, Path archiveFilePath, Repository repository, String commitId) throws IOException {
-        downloadRepository(repository, commitId, archiveFilePath);
+        securityService.withPermission(Permission.REPO_READ, "download repository").call(() -> {
+            downloadRepository(repository, commitId, archiveFilePath);
+            return null;
+        });
         extractArchive(archiveFilePath, extractedArchiveDirectoryPath);
     }
 
@@ -72,7 +78,7 @@ public class CodeService {
             newFile.mkdirs();
         } else {
             try (InputStream zipFileInputStream = zipFile.getInputStream(zipEntry)) {
-                try(OutputStream newFileOutputStream = new FileOutputStream(newFile)) {
+                try (OutputStream newFileOutputStream = new FileOutputStream(newFile)) {
                     copy(zipFileInputStream, newFileOutputStream);
                 }
             }
@@ -80,11 +86,11 @@ public class CodeService {
     }
 
     private void downloadRepository(Repository repository, String commitId, Path filePath) throws IOException {
-        FileOutputStream fileOutputStream = new FileOutputStream(filePath.toFile());
-        contentService.streamArchive(
-                new ArchiveRequest.Builder(repository, commitId).build(),
-                fileType -> fileOutputStream);
-        fileOutputStream.close();
+        try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toFile())) {
+            contentService.streamArchive(
+                    new ArchiveRequest.Builder(repository, commitId).build(),
+                    fileType -> fileOutputStream);
+        }
     }
 
     private void copy(InputStream source, OutputStream target) throws IOException {
