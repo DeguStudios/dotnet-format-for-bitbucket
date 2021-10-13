@@ -80,7 +80,7 @@ public class IdempotentExecutorTest {
     }
 
     private <T,R> IdempotentExecutor<T,R> getDefaultKeyExecutor(Function<T,R> executeFunc) {
-        return new IdempotentExecutor<>(executeFunc, x -> x.toString());
+        return new IdempotentExecutor<>(executeFunc, Object::toString);
     }
 
     private <T> Future<String> tryExecute(Function<T,String> executeFunc, String x) {
@@ -107,9 +107,7 @@ public class IdempotentExecutorTest {
     private static <V> V unwrap(Future<V> x) {
         try {
             return x.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
         return null;

@@ -2,7 +2,9 @@ package com.degustudios.bitbucket.content;
 
 import com.atlassian.bitbucket.content.ArchiveRequest;
 import com.atlassian.bitbucket.content.ContentService;
+import com.atlassian.bitbucket.permission.Permission;
 import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,10 +19,12 @@ import java.util.zip.ZipFile;
 @Service
 public class CodeService {
     private final ContentService contentService;
+    private final SecurityService securityService;
 
     @Autowired
-    public CodeService(@ComponentImport ContentService contentService) {
+    public CodeService(@ComponentImport ContentService contentService, @ComponentImport SecurityService securityService) {
         this.contentService = contentService;
+        this.securityService = securityService;
     }
 
     public boolean tryDownloadRepositoryCode(Path extractedArchiveDirectoryPath, Repository repository, String commitId) {
@@ -52,7 +56,10 @@ public class CodeService {
     }
 
     private void downloadRepositoryCode(Path extractedArchiveDirectoryPath, Path archiveFilePath, Repository repository, String commitId) throws IOException {
-        downloadRepository(repository, commitId, archiveFilePath);
+        securityService.withPermission(Permission.REPO_READ, "download repository").call(() -> {
+            downloadRepository(repository, commitId, archiveFilePath);
+            return null;
+        });
         extractArchive(archiveFilePath, extractedArchiveDirectoryPath);
     }
 

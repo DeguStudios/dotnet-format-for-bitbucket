@@ -3,7 +3,11 @@ package ut.com.degustudios.bitbucket.content;
 import com.atlassian.bitbucket.content.ArchiveRequest;
 import com.atlassian.bitbucket.content.ContentService;
 import com.atlassian.bitbucket.io.TypeAwareOutputSupplier;
+import com.atlassian.bitbucket.permission.Permission;
 import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.user.EscalatedSecurityContext;
+import com.atlassian.bitbucket.user.SecurityService;
+import com.atlassian.bitbucket.util.Operation;
 import com.degustudios.bitbucket.content.CodeService;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -22,10 +26,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CodeServiceTest {
@@ -34,12 +40,21 @@ public class CodeServiceTest {
     @Mock
     private ContentService contentService;
     @Mock
+    private SecurityService securityService;
+    @Mock
+    private EscalatedSecurityContext context;
+    @Mock
     private Repository repository;
 
     private Path temporaryDirectory;
 
     @Before
     public void initialize() throws IOException {
+        when(securityService.withPermission(eq(Permission.REPO_READ), notNull(String.class))).thenReturn(context);
+        when(context.call(notNull(Operation.class))).thenAnswer(invocationOnMock -> {
+            Operation<Object, IOException> call = (Operation<Object, IOException>) invocationOnMock.getArguments()[0];
+            return call.perform();
+        });
         temporaryDirectory = Files.createTempDirectory("tests");
     }
 
@@ -60,10 +75,10 @@ public class CodeServiceTest {
             }
             return null;
         })
-                .when(contentService)
-                .streamArchive(notNull(ArchiveRequest.class), notNull(TypeAwareOutputSupplier.class));
+        .when(contentService)
+        .streamArchive(notNull(ArchiveRequest.class), notNull(TypeAwareOutputSupplier.class));
 
-        CodeService codeService = new CodeService(contentService);
+        CodeService codeService = new CodeService(contentService, securityService);
 
         codeService.tryDownloadRepositoryCode(
                 temporaryDirectory,

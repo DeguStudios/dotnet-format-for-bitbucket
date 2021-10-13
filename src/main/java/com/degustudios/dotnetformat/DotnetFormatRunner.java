@@ -38,9 +38,9 @@ public class DotnetFormatRunner {
             return DotnetFormatCommandResult.failed(e);
         }
 
-        StringBuffer messageBuffer = new StringBuffer();
-        StreamGobbler inputStreamGobbler = new StreamGobbler(process.getInputStream(), s -> messageBuffer.append(s));
-        StreamGobbler errorStreamGobbler = new StreamGobbler(process.getErrorStream(), s -> messageBuffer.append(s));
+        StringBuilder messageBuffer = new StringBuilder();
+        StreamGobbler inputStreamGobbler = new StreamGobbler(process.getInputStream(), messageBuffer::append);
+        StreamGobbler errorStreamGobbler = new StreamGobbler(process.getErrorStream(), messageBuffer::append);
         Executors.newSingleThreadExecutor().submit(inputStreamGobbler);
         Executors.newSingleThreadExecutor().submit(errorStreamGobbler);
 
