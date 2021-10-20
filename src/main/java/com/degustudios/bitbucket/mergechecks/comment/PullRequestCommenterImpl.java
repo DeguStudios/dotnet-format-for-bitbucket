@@ -45,15 +45,21 @@ public class PullRequestCommenterImpl implements PullRequestCommenter {
 
     private void addOrReplaceComment(PullRequest pullRequest, String textComment, Optional<PullRequestCommentActivity> optionalActivity) {
         if (optionalActivity.isPresent()) {
-            Comment comment = optionalActivity.get().getComment();
-            commentService.updateComment(new CommentUpdateRequest.Builder(comment.getId())
-                    .text(formatComment(pullRequest, textComment))
-                    .version(comment.getVersion())
-                    .build());
+            updateComment(pullRequest, textComment, optionalActivity.get().getComment());
         } else {
-            commentService.addComment(
-                    new AddCommentRequest.Builder(pullRequest, formatComment(pullRequest, textComment)).build());
+            addNewComment(pullRequest, textComment);
         }
+    }
+
+    private void addNewComment(PullRequest pullRequest, String textComment) {
+        commentService.addComment(new AddCommentRequest.Builder(pullRequest, formatComment(pullRequest, textComment)).build());
+    }
+
+    private void updateComment(PullRequest pullRequest, String textComment, Comment comment) {
+        commentService.updateComment(new CommentUpdateRequest.Builder(comment.getId())
+                .text(formatComment(pullRequest, textComment))
+                .version(comment.getVersion())
+                .build());
     }
 
     private Optional<PullRequestCommentActivity> getLatestCommentActivity(Set<PullRequestCommentActivity> serviceComments) {
