@@ -6,6 +6,8 @@ import com.atlassian.bitbucket.permission.Permission;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,7 @@ import java.util.zip.ZipFile;
 
 @Service
 public class CodeService {
+    private static final Logger logger = LoggerFactory.getLogger(CodeService.class);
     private final ContentService contentService;
     private final SecurityService securityService;
 
@@ -38,7 +41,7 @@ public class CodeService {
                     commitId);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception for archiveFilePath: {}", archiveFilePath, e);
             return false;
         } finally {
             cleanUp(archiveFilePath);
@@ -50,7 +53,7 @@ public class CodeService {
             try {
                 Files.delete(archiveFilePath);
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Exception for archiveFilePath: {}", archiveFilePath, e);
             }
         }
     }

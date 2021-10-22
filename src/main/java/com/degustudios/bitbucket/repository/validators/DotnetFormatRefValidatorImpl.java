@@ -6,6 +6,8 @@ import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidator;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import com.degustudios.dotnetformat.DotnetFormatRunner;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.nio.file.Path;
 
 @Service("DotnetFormatRefValidatorImpl")
 public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
+    private static final Logger logger = LoggerFactory.getLogger(DotnetFormatRefValidatorImpl.class);
     private final CodeService codeService;
     private final DotnetFormatRunner dotnetFormatRunner;
 
@@ -32,7 +35,7 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
             codebaseDirectoryPath = Files.createTempDirectory("bb");
             return runDotnetFormat(ref, codebaseDirectoryPath);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception for repositoryRef: {}", ref, e);
             return DotnetFormatCommandResult.executedCorrectly(-1, e.getMessage());
         } finally {
             cleanUp(codebaseDirectoryPath);
@@ -44,7 +47,7 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
             try {
                 FileUtils.deleteDirectory(new File(codebaseDirectoryPath.toString()));
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Exception for codebaseDirectoryPath: {}", codebaseDirectoryPath, e);
             }
         }
     }
