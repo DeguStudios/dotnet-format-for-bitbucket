@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 @Service
 public class DotnetFormatRunner {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(DotnetFormatRunner.class);
+    private static Logger logger = LoggerFactory.getLogger(DotnetFormatRunner.class);
 
     public DotnetFormatRunner() {
     }
@@ -39,7 +39,7 @@ public class DotnetFormatRunner {
                     .directory(workingDirectory.toFile())
                     .start();
         } catch (IOException e) {
-            LOGGER.error("IO exception in main loop with params:  dotnet format, --check, Directory: ", workingDirectory.toString(),  e);
+            logger.error("IO exception in main loop with params:  dotnet format, --check, Directory: ", workingDirectory.toString(),  e);
             return DotnetFormatCommandResult.failed(e);
         }
         StringBuilder messageBuffer = new StringBuilder();
