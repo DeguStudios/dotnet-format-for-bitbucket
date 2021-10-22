@@ -1,5 +1,7 @@
 package com.degustudios.dotnetformat;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -12,6 +14,9 @@ import java.util.function.Consumer;
 
 @Service
 public class DotnetFormatRunner {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(DotnetFormatRunner.class);
+
     public DotnetFormatRunner() {
     }
 
@@ -34,10 +39,9 @@ public class DotnetFormatRunner {
                     .directory(workingDirectory.toFile())
                     .start();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("IO exception in main loop with params:  dotnet format, --check, Directory: ", workingDirectory.toString(),  e);
             return DotnetFormatCommandResult.failed(e);
         }
-
         StringBuilder messageBuffer = new StringBuilder();
         StreamGobbler inputStreamGobbler = new StreamGobbler(process.getInputStream(), messageBuffer::append);
         StreamGobbler errorStreamGobbler = new StreamGobbler(process.getErrorStream(), messageBuffer::append);

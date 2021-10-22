@@ -189,7 +189,12 @@
                         <Spring-Context>*</Spring-Context>
 
                     </instructions>
-
+                    <containerId>${containerId}</containerId>
+                    <jvmArgs>${jvm.args}</jvmArgs>
+                    <productVersion>${confluence.version}</productVersion>
+                    <productDataVersion>${confluence.data.version}</productDataVersion>
+                    <!-- log ouput -->
+                    <output>${project.build.directory}/confluence/home/logs/atlassian-confluence.log</output>
                     <enableQuickReload>true</enableQuickReload>
                     <enableFastdev>false</enableFastdev>
                 </configuration>
