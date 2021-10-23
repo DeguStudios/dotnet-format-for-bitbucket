@@ -51,4 +51,13 @@ public class IdempotentExecutor<T,R> {
     private Future<R> scheduleForExecution(T param) {
         return executor.submit(() -> executeFunc.apply(param));
     }
+
+    @Override
+    public String toString() {
+        return "IdempotentExecutor{" +
+                ", executor=" + executor +
+                ", executeFunc=" + executeFunc +
+                ", mapToKeyFunc=" + mapToKeyFunc +
+                '}';
+    }
 }

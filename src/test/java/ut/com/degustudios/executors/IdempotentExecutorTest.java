@@ -5,6 +5,8 @@ import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,13 +16,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IdempotentExecutorTest {
     private static final int SLEEP_TIME_MS = 1000;
     public static final int EMPTY_EXECUTION_TIME_MS = 100;
+    private static final Logger logger = LoggerFactory.getLogger(IdempotentExecutorTest.class);
 
     @Test
     public void executeReturnsFutureValueFromFunction() throws ExecutionException, InterruptedException {
@@ -99,7 +102,7 @@ public class IdempotentExecutorTest {
         try {
             return executor.execute(x);
         } catch (ConcurrentException e) {
-            e.printStackTrace();
+            logger.error("Exception for conurent excception for exectur: {}", executor, e);
         }
         return null;
     }
@@ -108,7 +111,7 @@ public class IdempotentExecutorTest {
         try {
             return x.get();
         } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            logger.error("error for x: {}", x, e);
         }
         return null;
     }
