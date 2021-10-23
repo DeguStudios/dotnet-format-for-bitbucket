@@ -189,12 +189,11 @@
                         <Spring-Context>*</Spring-Context>
 
                     </instructions>
-                    <containerId>${containerId}</containerId>
                     <jvmArgs>${jvm.args}</jvmArgs>
-                    <productVersion>${confluence.version}</productVersion>
-                    <productDataVersion>${confluence.data.version}</productDataVersion>
+                    <productVersion>${bitbucket.version}</productVersion>
+                    <productDataVersion>${bitbucket.data.version}</productDataVersion>
                     <!-- log ouput -->
-                    <output>${project.build.directory}/confluence/home/logs/atlassian-confluence.log</output>
+                    <output>${project.build.directory}/bitbucket/home/log/atlassian-bitbucket-dotnet-format-for-bitbucket.log</output>
                     <enableQuickReload>true</enableQuickReload>
                     <enableFastdev>false</enableFastdev>
                 </configuration>

@@ -35,7 +35,7 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
             codebaseDirectoryPath = Files.createTempDirectory("bb");
             return runDotnetFormat(ref, codebaseDirectoryPath);
         } catch (IOException e) {
-            logger.error("Exception for repositoryRef: {}", ref, e);
+            logger.error("Failed to create temporary file", e);
             return DotnetFormatCommandResult.executedCorrectly(-1, e.getMessage());
         } finally {
             cleanUp(codebaseDirectoryPath);

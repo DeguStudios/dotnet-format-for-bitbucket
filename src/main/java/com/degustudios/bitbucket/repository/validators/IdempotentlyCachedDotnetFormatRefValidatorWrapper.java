@@ -32,7 +32,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements Dotnet
         try {
             return executor.execute(ref).get();
         } catch (InterruptedException | ExecutionException | ConcurrentException e) {
-            logger.error("Exception for RepositoryRefId: {}", ref.getId(), e);
+            logger.error("Failed to execute validator for Ref ID: {}", ref.getId(), e);
             return DotnetFormatCommandResult.failed(e);
         }
     }

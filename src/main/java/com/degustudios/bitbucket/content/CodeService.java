@@ -41,7 +41,7 @@ public class CodeService {
                     commitId);
             return true;
         } catch (IOException e) {
-            logger.error("Exception for archiveFilePath: {}", archiveFilePath, e);
+            logger.error("Failed to download repository code for: {}", commitId, e);
             return false;
         } finally {
             cleanUp(archiveFilePath);
@@ -53,7 +53,7 @@ public class CodeService {
             try {
                 Files.delete(archiveFilePath);
             } catch (IOException e) {
-                logger.error("Exception for archiveFilePath: {}", archiveFilePath, e);
+                logger.error("Failed to clean up temporary file {}", archiveFilePath, e);
             }
         }
     }

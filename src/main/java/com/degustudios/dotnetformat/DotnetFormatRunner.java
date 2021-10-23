@@ -52,7 +52,7 @@ public class DotnetFormatRunner {
         try {
             exitCode = process.waitFor();
         } catch (InterruptedException e) {
-            logger.error("Exception for workingDirectory: {}", workingDirectory, e);
+            logger.error("dotnet-format process was aborted for: \"dotnet format, --check\" in {}", workingDirectory, e);
             return DotnetFormatCommandResult.failed(e);
         }
 
