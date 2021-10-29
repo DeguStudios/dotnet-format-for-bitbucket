@@ -8,7 +8,7 @@
     {call aui.form.textField}
         {param id: 'dotnetFormatParams' /}
 		{param labelContent: 'Additional parameters' /}
-		{param value:$config ? $config['dotnetFormatParams'] : null /}
+		{param value:$config ? $config['dotnetFormatParams'] : '--check' /}
 		{param descriptionText: 'Additional parameters passed into dotnet-format command.' /}
         {param extraClasses: 'long-field' /}
         {param isRequired: 'false' /}
