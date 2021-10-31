@@ -39,7 +39,7 @@ public class IdempotentExecutorTest {
 
     @Test
     public void executeReturnsImmediately() {
-        IdempotentExecutor executor = getDefaultKeyExecutor(IdempotentExecutorTest::sleepPassthrough);
+        IdempotentExecutor executor = getDefaultKeyCacheAllExecutor(IdempotentExecutorTest::sleepPassthrough);
         long start = System.currentTimeMillis();
         tryExecute(executor);
         long end = System.currentTimeMillis();
@@ -51,7 +51,7 @@ public class IdempotentExecutorTest {
     public void canExecuteMultipleItemsAtTheSameTime() {
         String expectedResult = "This should run asynchronously!";
         String[] parameters = expectedResult.split(" ");
-        IdempotentExecutor<String, String> executor = getDefaultKeyExecutor(IdempotentExecutorTest::sleepPassthrough);
+        IdempotentExecutor<String, String> executor = getDefaultKeyCacheAllExecutor(IdempotentExecutorTest::sleepPassthrough);
 
         long start = System.currentTimeMillis();
         String actualResult = Arrays.stream(parameters)
@@ -67,10 +67,10 @@ public class IdempotentExecutorTest {
     }
 
     @Test
-    public void willOnlyExecuteTheSameParametersOnce() {
+    public void willOnlyExecuteTheSameParametersOnceIfCacheFunctionReturnsFalse() {
         AtomicInteger invocationCounter = new AtomicInteger(0);
         String[] parameters = Collections.nCopies(1000, "SAME").toArray(new String[0]);
-        IdempotentExecutor<String, String> executor = getDefaultKeyExecutor(x -> countingPassthrough(invocationCounter, x));
+        IdempotentExecutor<String, String> executor = getDefaultKeyCacheAllExecutor(x -> countingPassthrough(invocationCounter, x));
 
         Arrays.stream(parameters)
                 .map(x -> tryExecute(executor, x))
@@ -82,16 +82,32 @@ public class IdempotentExecutorTest {
         assertThat(invocationCounter.get(), is(1));
     }
 
-    private <T,R> IdempotentExecutor<T,R> getDefaultKeyExecutor(Function<T,R> executeFunc) {
-        return new IdempotentExecutor<>(executeFunc, Object::toString);
+    @Test
+    public void willExecuteTheSameParametersAgainIfCacheFunctionReturnsFalse() {
+        AtomicInteger invocationCounter = new AtomicInteger(0);
+        String param = "SAME";
+        IdempotentExecutor<String, String> executor = getDefaultKeyCacheNoneExecutor(x -> countingPassthrough(invocationCounter, x));
+
+        unwrap(tryExecute(executor, param));
+        unwrap(tryExecute(executor, param));
+
+        assertThat(invocationCounter.get(), is(2));
+    }
+
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheAllExecutor(Function<T,R> executeFunc) {
+        return new IdempotentExecutor<>(executeFunc, Object::toString, r -> true);
+    }
+
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheNoneExecutor(Function<T,R> executeFunc) {
+        return new IdempotentExecutor<>(executeFunc, Object::toString, r -> false);
     }
 
     private <T> Future<String> tryExecute(Function<T,String> executeFunc, String x) {
-        return tryExecute(getDefaultKeyExecutor(executeFunc), x);
+        return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc), x);
     }
 
     private <T> Future<String> tryExecute(Function<T,String> executeFunc) {
-        return tryExecute(getDefaultKeyExecutor(executeFunc));
+        return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc));
     }
 
     private Future<String> tryExecute(IdempotentExecutor executor) {

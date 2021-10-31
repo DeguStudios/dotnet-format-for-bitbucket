@@ -8,7 +8,8 @@ import java.util.function.Function;
 public class IdempotentExecutorBuilder {
     public <T,R> IdempotentExecutor<T,R> build(
             Function<T,R> executeFunc,
-            Function<T, String> mapToKeyFunc) {
-        return new IdempotentExecutor<>(executeFunc, mapToKeyFunc);
+            Function<T, String> mapToKeyFunc,
+            Function<R, Boolean> shouldCacheFunc) {
+        return new IdempotentExecutor<>(executeFunc, mapToKeyFunc, shouldCacheFunc);
     }
 }

@@ -15,10 +15,12 @@ public class IdempotentExecutor<T,R> {
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final Function<T, R> executeFunc;
     private final Function<T, String> mapToKeyFunc;
+    private final Function<R, Boolean> shouldCacheFunc;
 
-    public IdempotentExecutor(Function<T,R> executeFunc, Function<T, String> mapToKeyFunc) {
+    public IdempotentExecutor(Function<T,R> executeFunc, Function<T, String> mapToKeyFunc, Function<R, Boolean> shouldCacheFunc) {
         this.executeFunc = executeFunc;
         this.mapToKeyFunc = mapToKeyFunc;
+        this.shouldCacheFunc = shouldCacheFunc;
     }
 
     public Future<R> execute(T param) throws ConcurrentException {
@@ -49,7 +51,13 @@ public class IdempotentExecutor<T,R> {
     }
 
     private Future<R> scheduleForExecution(T param) {
-        return executor.submit(() -> executeFunc.apply(param));
+        return executor.submit(() -> {
+            R result = executeFunc.apply(param);
+            if (!shouldCacheFunc.apply(result)) {
+                cache.remove(mapToKeyFunc.apply(param));
+            }
+            return result;
+        });
     }
 
     @Override
