@@ -14,10 +14,11 @@ public class NativeCommandRunnerImpl implements NativeCommandRunner {
 
     private final Logger logger = LoggerFactory.getLogger(NativeCommandRunnerImpl.class);
 
-    private final ProcessBuilder processBuilder = new ProcessBuilder();
+
 
     @Override
     public DotnetFormatCommandResult runCommand(File workingDirectory, String... command) {
+        ProcessBuilder processBuilder = new ProcessBuilder();
         Process process;
         try {
             process = processBuilder
