@@ -1,13 +1,9 @@
 package com.degustudios.bitbucket.mergechecks;
 
-import com.atlassian.bitbucket.comment.AddCommentRequest;
-import com.atlassian.bitbucket.comment.Comment;
-import com.atlassian.bitbucket.comment.CommentService;
 import com.atlassian.bitbucket.hook.repository.PreRepositoryHookContext;
 import com.atlassian.bitbucket.hook.repository.PullRequestMergeHookRequest;
 import com.atlassian.bitbucket.hook.repository.RepositoryHookResult;
 import com.atlassian.bitbucket.hook.repository.RepositoryMergeCheck;
-import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,6 +15,7 @@ import javax.annotation.Nonnull;
 public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeCheck {
     private static final String rejectedSummaryMessageWhenRun = "Dotnet format has found issues.";
     private static final String rejectedSummaryMessageWhenCouldNotRun = "Dotnet format could not be run.";
+    public static final String DOTNET_FORMAT_PARAMS = "dotnetFormatParams";
     private final DotnetFormatRefValidator dotnetFormatRefValidator;
     private final PullRequestCommenter pullRequestCommenter;
 
@@ -34,7 +31,8 @@ public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeChe
     @Override
     public RepositoryHookResult preUpdate(@Nonnull PreRepositoryHookContext context,
                                           @Nonnull PullRequestMergeHookRequest request) {
-        DotnetFormatCommandResult result = dotnetFormatRefValidator.validate(request.getFromRef());
+        String dotnetFormatParams = context.getSettings().getString(DOTNET_FORMAT_PARAMS);
+        DotnetFormatCommandResult result = dotnetFormatRefValidator.validate(request.getFromRef(), dotnetFormatParams);
         if (result.getExitCode() == 0) {
             return RepositoryHookResult.accepted();
         } else if (!result.hasExecutedCorrectly()) {

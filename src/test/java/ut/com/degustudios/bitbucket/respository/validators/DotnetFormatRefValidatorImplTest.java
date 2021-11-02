@@ -38,6 +38,8 @@ public class DotnetFormatRefValidatorImplTest
     @Mock
     private RepositoryRef ref;
 
+    private String params = "--check22";
+
     private DotnetFormatRefValidatorImpl validator;
 
     @Before
@@ -122,12 +124,12 @@ public class DotnetFormatRefValidatorImplTest
     }
 
     private DotnetFormatCommandResult runValidator() {
-        return validator.validate(ref);
+        return validator.validate(ref, params);
     }
 
     private DotnetFormatCommandResult setupDotnetFormatRunnerToReturn(int exitCode, String message) {
         DotnetFormatCommandResult commandResult = DotnetFormatCommandResult.executedCorrectly(exitCode, message);
-        when(dotnetFormatRunner.runDotnetFormat(notNull(Path.class))).thenReturn(commandResult);
+        when(dotnetFormatRunner.runDotnetFormat(notNull(Path.class), eq(params))).thenReturn(commandResult);
         return commandResult;
     }
 

@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,13 +29,13 @@ public class IdempotentExecutorTest {
     @Test
     public void executeReturnsFutureValueFromFunction() throws ExecutionException, InterruptedException {
         String returnValue = "TEST";
-        assertThat(tryExecute(x -> returnValue).get(), is(returnValue));
+        assertThat(tryExecute((x, y) -> returnValue).get(), is(returnValue));
     }
 
     @Test
     public void executePassesParameterToFunction() throws ExecutionException, InterruptedException {
         String returnValue = "TEST";
-        assertThat(tryExecute((String x) -> x, returnValue).get(), is(returnValue));
+        assertThat(tryExecute((String x, String y) -> x, returnValue).get(), is(returnValue));
     }
 
     @Test
@@ -70,7 +71,7 @@ public class IdempotentExecutorTest {
     public void willOnlyExecuteTheSameParametersOnce() {
         AtomicInteger invocationCounter = new AtomicInteger(0);
         String[] parameters = Collections.nCopies(1000, "SAME").toArray(new String[0]);
-        IdempotentExecutor<String, String> executor = getDefaultKeyExecutor(x -> countingPassthrough(invocationCounter, x));
+        IdempotentExecutor<String, String> executor = getDefaultKeyExecutor((x,y) -> countingPassthrough(invocationCounter, x));
 
         Arrays.stream(parameters)
                 .map(x -> tryExecute(executor, x))
@@ -82,15 +83,15 @@ public class IdempotentExecutorTest {
         assertThat(invocationCounter.get(), is(1));
     }
 
-    private <T,R> IdempotentExecutor<T,R> getDefaultKeyExecutor(Function<T,R> executeFunc) {
-        return new IdempotentExecutor<>(executeFunc, Object::toString);
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyExecutor(BiFunction<T, String, R> executeFunc) {
+        return new IdempotentExecutor<>(executeFunc, (t, s) -> t.toString());
     }
 
-    private <T> Future<String> tryExecute(Function<T,String> executeFunc, String x) {
+    private <T> Future<String> tryExecute(BiFunction<T,String, String> executeFunc, String x) {
         return tryExecute(getDefaultKeyExecutor(executeFunc), x);
     }
 
-    private <T> Future<String> tryExecute(Function<T,String> executeFunc) {
+    private <T> Future<String> tryExecute(BiFunction<T,String, String> executeFunc) {
         return tryExecute(getDefaultKeyExecutor(executeFunc));
     }
 
@@ -100,7 +101,7 @@ public class IdempotentExecutorTest {
 
     private <V> Future<V> tryExecute(IdempotentExecutor executor, V x) {
         try {
-            return executor.execute(x);
+            return executor.execute(x, "--mockParameter");
         } catch (ConcurrentException e) {
             logger.error("Exception for conurent excception for exectur: {}", executor, e);
         }
@@ -121,7 +122,7 @@ public class IdempotentExecutorTest {
         return x;
     }
 
-    private static <V> V sleepPassthrough(V x) {
+    private static <V> V sleepPassthrough(V x, String params) {
         try {
             Thread.sleep(SLEEP_TIME_MS);
         } catch (InterruptedException e) {
