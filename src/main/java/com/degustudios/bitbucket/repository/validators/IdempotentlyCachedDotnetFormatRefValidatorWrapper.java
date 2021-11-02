@@ -28,6 +28,10 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements Dotnet
     public DotnetFormatCommandResult validate(RepositoryRef ref, String params) {
         try {
             return executor.execute(ref, params).get();
+        } catch (InterruptedException interruptedException) {
+            logger.error("Interrupted exception");
+            Thread.currentThread().interrupt();
+            return DotnetFormatCommandResult.failed(interruptedException);
         } catch (Exception e) {
             logger.error("Failed to execute validator for Ref ID: {}", ref.getId(), e);
             return DotnetFormatCommandResult.failed(e);
