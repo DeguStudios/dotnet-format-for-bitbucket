@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.function.BiFunction;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -26,6 +27,11 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
+    private static final int UnhandledExceptionExitCode = 1;
+    private static final int CheckFailedExitCode = 2;
+    private static final int UnableToLocateMSBuildExitCode = 3;
+    private static final int UnableToLocateDotNetCliExitCode = 4;
+
     @Mock
     private DotnetFormatRefValidator validator;
     @Mock
@@ -37,7 +43,9 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Captor
     private ArgumentCaptor<BiFunction<RepositoryRef, String, DotnetFormatCommandResult>> scheduleFuncCaptor;
     @Captor
-    private ArgumentCaptor<BiFunction<RepositoryRef, String, String>> keyMapFuncCaptor;
+    private ArgumentCaptor<Function<RepositoryRef, String>> keyMapFuncCaptor;
+    @Captor
+    private ArgumentCaptor<Function<DotnetFormatCommandResult, Boolean>> shouldCacheFuncCaptor;
     @Mock
     private Repository repository;
 
@@ -45,7 +53,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
     @Before
     public void initialize(){
-        when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any())).thenReturn(executor);
+        when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any(), any())).thenReturn(executor);
         params = "--check";
     }
 
@@ -55,7 +63,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
         runValidatorWrapper();
 
-        verify(executorBuilder).build(scheduleFuncCaptor.capture(), any());
+        verify(executorBuilder).build(scheduleFuncCaptor.capture(), any(), any());
         verify(validator, times(0)).validate(any(), eq(params));
         scheduleFuncCaptor.getValue().apply(ref, params);
         verify(validator, times(1)).validate(ref, params);
@@ -72,14 +80,57 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
         runValidatorWrapper();
 
-        verify(executorBuilder).build(any(), keyMapFuncCaptor.capture());
-        assertThat(keyMapFuncCaptor.getValue().apply(ref, params), is(repositoryId + "/" + commitId));
+        verify(executorBuilder).build(any(), keyMapFuncCaptor.capture(), any());
+        assertThat(keyMapFuncCaptor.getValue().apply(ref), is(repositoryId + "/" + commitId));
+    }
+
+    @Test
+    public void doesNotCacheInvalidDotNetFormatExecutions() throws ConcurrentException {
+        DotnetFormatCommandResult result = DotnetFormatCommandResult.failed("ERROR!");
+        when(executor.execute(eq(ref), eq(params))).thenReturn(CompletableFuture.completedFuture(null));
+
+        runValidatorWrapper();
+
+        verify(executorBuilder).build(any(), any(), shouldCacheFuncCaptor.capture());
+        assertThat(shouldCacheFuncCaptor.getValue().apply(result), is(false));
+    }
+
+    @Test
+    public void doesNotCacheExecutedCorrectlyNegativeExitCodeDotNetFormatExecutions() throws ConcurrentException {
+        assertDoesNotCacheExecutedCorrectlyDotNetFormatExecutions(-1);
+    }
+
+    @Test
+    public void doesNotCacheExecutedCorrectlyUnhandledExceptionExitCodeDotNetFormatExecutions() throws ConcurrentException {
+        assertDoesNotCacheExecutedCorrectlyDotNetFormatExecutions(UnhandledExceptionExitCode);
+    }
+
+    @Test
+    public void doesNotCacheExecutedCorrectlyUnableToLocateMSBuildExitCodeeDotNetFormatExecutions() throws ConcurrentException {
+        assertDoesNotCacheExecutedCorrectlyDotNetFormatExecutions(UnableToLocateMSBuildExitCode);
+    }
+
+    @Test
+    public void doesNotCacheExecutedCorrectlyUnableToLocateDotNetCliExitCodeDotNetFormatExecutions() throws ConcurrentException {
+        assertDoesNotCacheExecutedCorrectlyDotNetFormatExecutions(UnableToLocateDotNetCliExitCode);
+    }
+
+
+
+    @Test
+    public void doesCacheExecutedCorrectlyZeroExitCodeDotNetFormatExecutions() throws ConcurrentException {
+        assertDoesCacheExecutedCorrectlyDotNetFormatExecutions(0);
+    }
+
+    @Test
+    public void doesCacheExecutedCorrectlyCheckFailedExitCodeDotNetFormatExecutions() throws ConcurrentException {
+        assertDoesCacheExecutedCorrectlyDotNetFormatExecutions(CheckFailedExitCode);
     }
 
     @Test
     public void returnsDotnetFormatValidationFromExecutor() throws ConcurrentException {
         DotnetFormatCommandResult expectedResult = DotnetFormatCommandResult.executedCorrectly(0, "OK!");
-        when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any())).thenReturn(executor);
+        when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any(), any())).thenReturn(executor);
         when(executor.execute(ref, params)).thenReturn(CompletableFuture.completedFuture(expectedResult));
 
         DotnetFormatCommandResult actualResult = runValidatorWrapper();
@@ -96,7 +147,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
         wrapper.validate(ref, params);
         wrapper.validate(ref, params);
 
-        verify(executorBuilder, times(1)).build(any(), any());
+        verify(executorBuilder, times(1)).build(any(), any(), any());
     }
 
     @Test
@@ -136,6 +187,24 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
         assertThat(result.getExitCode(), is(-1));
         assertThat(result.getMessage(), is("Failed to execute dotnet-format command: null"));
         assertThat(result.hasExecutedCorrectly(), is(false));
+    }
+
+    private void assertDoesCacheExecutedCorrectlyDotNetFormatExecutions(int exitCode) throws ConcurrentException {
+        assertCacheDotNetFormatExecutions(exitCode, "OK!", true);
+    }
+
+    private void assertDoesNotCacheExecutedCorrectlyDotNetFormatExecutions(int exitCode) throws ConcurrentException {
+        assertCacheDotNetFormatExecutions(exitCode, "ERROR!", false);
+    }
+
+    private void assertCacheDotNetFormatExecutions(int exitCode, String s, boolean shouldCache) throws ConcurrentException {
+        DotnetFormatCommandResult result = DotnetFormatCommandResult.executedCorrectly(exitCode, s);
+        when(executor.execute(eq(ref), eq(params))).thenReturn(CompletableFuture.completedFuture(null));
+
+        runValidatorWrapper();
+
+        verify(executorBuilder).build(any(), any(), shouldCacheFuncCaptor.capture());
+        assertThat(shouldCacheFuncCaptor.getValue().apply(result), is(shouldCache));
     }
 
     private DotnetFormatCommandResult throwException() {

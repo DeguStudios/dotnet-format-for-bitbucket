@@ -1,4 +1,4 @@
-package ut.com.degustudios.bitbucket.respository.validators;
+package ut.com.degustudios.bitbucket.repository.validators;
 
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.repository.RepositoryRef;
