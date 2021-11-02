@@ -5,7 +5,6 @@ import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidator;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import com.degustudios.executors.IdempotentExecutor;
 import com.degustudios.executors.IdempotentExecutorBuilder;
-import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 
 @Service("IdempotentlyCachedDotnetFormatRefValidatorWrapper")
 public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements DotnetFormatRefValidator {
@@ -32,10 +30,10 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements Dotnet
                         && Arrays.stream(CacheableExitCodes).anyMatch(x -> x == result.getExitCode()));
     }
 
-    public DotnetFormatCommandResult validate(RepositoryRef ref) {
+    public DotnetFormatCommandResult validate(RepositoryRef ref, String params) {
         try {
-            return executor.execute(ref).get();
-        } catch (InterruptedException | ExecutionException | ConcurrentException e) {
+            return executor.execute(ref, params).get();
+        } catch (Exception e) {
             logger.error("Failed to execute validator for Ref ID: {}", ref.getId(), e);
             return DotnetFormatCommandResult.failed(e);
         }

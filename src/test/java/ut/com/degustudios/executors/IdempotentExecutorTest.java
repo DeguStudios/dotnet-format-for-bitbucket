@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,13 +29,13 @@ public class IdempotentExecutorTest {
     @Test
     public void executeReturnsFutureValueFromFunction() throws ExecutionException, InterruptedException {
         String returnValue = "TEST";
-        assertThat(tryExecute(x -> returnValue).get(), is(returnValue));
+        assertThat(tryExecute((x, y) -> returnValue).get(), is(returnValue));
     }
 
     @Test
     public void executePassesParameterToFunction() throws ExecutionException, InterruptedException {
         String returnValue = "TEST";
-        assertThat(tryExecute((String x) -> x, returnValue).get(), is(returnValue));
+        assertThat(tryExecute((String x, String y) -> x, returnValue).get(), is(returnValue));
     }
 
     @Test
@@ -70,7 +71,7 @@ public class IdempotentExecutorTest {
     public void willOnlyExecuteTheSameParametersOnceIfCacheFunctionReturnsFalse() {
         AtomicInteger invocationCounter = new AtomicInteger(0);
         String[] parameters = Collections.nCopies(1000, "SAME").toArray(new String[0]);
-        IdempotentExecutor<String, String> executor = getDefaultKeyCacheAllExecutor(x -> countingPassthrough(invocationCounter, x));
+        IdempotentExecutor<String, String> executor = getDefaultKeyCacheAllExecutor((x, y) -> countingPassthrough(invocationCounter, x, y));
 
         Arrays.stream(parameters)
                 .map(x -> tryExecute(executor, x))
@@ -86,7 +87,7 @@ public class IdempotentExecutorTest {
     public void willExecuteTheSameParametersAgainIfCacheFunctionReturnsFalse() {
         AtomicInteger invocationCounter = new AtomicInteger(0);
         String param = "SAME";
-        IdempotentExecutor<String, String> executor = getDefaultKeyCacheNoneExecutor(x -> countingPassthrough(invocationCounter, x));
+        IdempotentExecutor<String, String> executor = getDefaultKeyCacheNoneExecutor((x,y) -> countingPassthrough(invocationCounter, x, y));
 
         unwrap(tryExecute(executor, param));
         unwrap(tryExecute(executor, param));
@@ -94,19 +95,19 @@ public class IdempotentExecutorTest {
         assertThat(invocationCounter.get(), is(2));
     }
 
-    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheAllExecutor(Function<T,R> executeFunc) {
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheAllExecutor(BiFunction<T, String, R> executeFunc) {
         return new IdempotentExecutor<>(executeFunc, Object::toString, r -> true);
     }
 
-    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheNoneExecutor(Function<T,R> executeFunc) {
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheNoneExecutor(BiFunction<T, String, R> executeFunc) {
         return new IdempotentExecutor<>(executeFunc, Object::toString, r -> false);
     }
 
-    private <T> Future<String> tryExecute(Function<T,String> executeFunc, String x) {
+    private <T> Future<String> tryExecute(BiFunction<T,String,String> executeFunc, String x) {
         return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc), x);
     }
 
-    private <T> Future<String> tryExecute(Function<T,String> executeFunc) {
+    private <T> Future<String> tryExecute(BiFunction<T,String,String> executeFunc) {
         return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc));
     }
 
@@ -116,7 +117,7 @@ public class IdempotentExecutorTest {
 
     private <V> Future<V> tryExecute(IdempotentExecutor executor, V x) {
         try {
-            return executor.execute(x);
+            return executor.execute(x, "--mockParameter");
         } catch (ConcurrentException e) {
             logger.error("Exception for conurent excception for exectur: {}", executor, e);
         }
@@ -132,12 +133,12 @@ public class IdempotentExecutorTest {
         return null;
     }
 
-    private <V> V countingPassthrough(AtomicInteger invocationCounter, V x) {
+    private <V> V countingPassthrough(AtomicInteger invocationCounter, V x, String params) {
         invocationCounter.incrementAndGet();
         return x;
     }
 
-    private static <V> V sleepPassthrough(V x) {
+    private static <V> V sleepPassthrough(V x, String params) {
         try {
             Thread.sleep(SLEEP_TIME_MS);
         } catch (InterruptedException e) {

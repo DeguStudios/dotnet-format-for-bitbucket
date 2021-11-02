@@ -18,6 +18,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -40,7 +41,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Mock
     private IdempotentExecutor<RepositoryRef, DotnetFormatCommandResult> executor;
     @Captor
-    private ArgumentCaptor<Function<RepositoryRef, DotnetFormatCommandResult>> scheduleFuncCaptor;
+    private ArgumentCaptor<BiFunction<RepositoryRef, String, DotnetFormatCommandResult>> scheduleFuncCaptor;
     @Captor
     private ArgumentCaptor<Function<RepositoryRef, String>> keyMapFuncCaptor;
     @Captor
@@ -48,21 +49,24 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Mock
     private Repository repository;
 
+    private String params;
+
     @Before
     public void initialize(){
         when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any(), any())).thenReturn(executor);
+        params = "--check";
     }
 
     @Test
     public void schedulesDotnetFormatValidation() throws ConcurrentException {
-        when(executor.execute(eq(ref))).thenReturn(CompletableFuture.completedFuture(null));
+        when(executor.execute(ref, params)).thenReturn(CompletableFuture.completedFuture(null));
 
         runValidatorWrapper();
 
         verify(executorBuilder).build(scheduleFuncCaptor.capture(), any(), any());
-        verify(validator, times(0)).validate(any());
-        scheduleFuncCaptor.getValue().apply(ref);
-        verify(validator, times(1)).validate(eq(ref));
+        verify(validator, times(0)).validate(any(), eq(params));
+        scheduleFuncCaptor.getValue().apply(ref, params);
+        verify(validator, times(1)).validate(ref, params);
     }
 
     @Test
@@ -72,7 +76,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
         when(ref.getLatestCommit()).thenReturn(commitId);
         when(ref.getRepository()).thenReturn(repository);
         when(repository.getId()).thenReturn(repositoryId);
-        when(executor.execute(eq(ref))).thenReturn(CompletableFuture.completedFuture(null));
+        when(executor.execute(ref, params)).thenReturn(CompletableFuture.completedFuture(null));
 
         runValidatorWrapper();
 
@@ -83,7 +87,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Test
     public void doesNotCacheInvalidDotNetFormatExecutions() throws ConcurrentException {
         DotnetFormatCommandResult result = DotnetFormatCommandResult.failed("ERROR!");
-        when(executor.execute(eq(ref))).thenReturn(CompletableFuture.completedFuture(null));
+        when(executor.execute(eq(ref), eq(params))).thenReturn(CompletableFuture.completedFuture(null));
 
         runValidatorWrapper();
 
@@ -127,7 +131,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     public void returnsDotnetFormatValidationFromExecutor() throws ConcurrentException {
         DotnetFormatCommandResult expectedResult = DotnetFormatCommandResult.executedCorrectly(0, "OK!");
         when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any(), any())).thenReturn(executor);
-        when(executor.execute(eq(ref))).thenReturn(CompletableFuture.completedFuture(expectedResult));
+        when(executor.execute(ref, params)).thenReturn(CompletableFuture.completedFuture(expectedResult));
 
         DotnetFormatCommandResult actualResult = runValidatorWrapper();
 
@@ -136,12 +140,12 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
     @Test
     public void onlyBuildsOneExecutor() throws ConcurrentException {
-        when(executor.execute(eq(ref))).thenReturn(CompletableFuture.completedFuture(null));
+        when(executor.execute(ref, params)).thenReturn(CompletableFuture.completedFuture(null));
 
         IdempotentlyCachedDotnetFormatRefValidatorWrapper wrapper = new IdempotentlyCachedDotnetFormatRefValidatorWrapper(validator, executorBuilder);
-        wrapper.validate(ref);
-        wrapper.validate(ref);
-        wrapper.validate(ref);
+        wrapper.validate(ref, params);
+        wrapper.validate(ref, params);
+        wrapper.validate(ref, params);
 
         verify(executorBuilder, times(1)).build(any(), any(), any());
     }
@@ -151,7 +155,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
         InterruptedException exception = new InterruptedException("ERROR!");
         CompletableFuture<DotnetFormatCommandResult> future = new CompletableFuture<>();
         future.completeExceptionally(exception);
-        when(executor.execute(any())).thenReturn(future);
+        when(executor.execute(any(), eq(params))).thenReturn(future);
 
         DotnetFormatCommandResult result = runValidatorWrapper();
 
@@ -163,7 +167,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
     @Test
     public void handlesExecutionException() throws ConcurrentException {
-        when(executor.execute(any())).thenReturn(CompletableFuture.supplyAsync(this::throwException));
+        when(executor.execute(any(), eq(params))).thenReturn(CompletableFuture.supplyAsync(this::throwException));
 
         DotnetFormatCommandResult result = runValidatorWrapper();
 
@@ -175,7 +179,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
     @Test
     public void handlesConcurrentException() throws ConcurrentException {
-        when(executor.execute(any())).thenThrow(ConcurrentException.class);
+        when(executor.execute(any(), eq(params))).thenThrow(ConcurrentException.class);
 
         DotnetFormatCommandResult result = runValidatorWrapper();
 
@@ -195,7 +199,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
     private void assertCacheDotNetFormatExecutions(int exitCode, String s, boolean shouldCache) throws ConcurrentException {
         DotnetFormatCommandResult result = DotnetFormatCommandResult.executedCorrectly(exitCode, s);
-        when(executor.execute(eq(ref))).thenReturn(CompletableFuture.completedFuture(null));
+        when(executor.execute(eq(ref), eq(params))).thenReturn(CompletableFuture.completedFuture(null));
 
         runValidatorWrapper();
 
@@ -208,6 +212,6 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     }
 
     private DotnetFormatCommandResult runValidatorWrapper() {
-        return new IdempotentlyCachedDotnetFormatRefValidatorWrapper(validator, executorBuilder).validate(ref);
+        return new IdempotentlyCachedDotnetFormatRefValidatorWrapper(validator, executorBuilder).validate(ref, params);
     }
 }

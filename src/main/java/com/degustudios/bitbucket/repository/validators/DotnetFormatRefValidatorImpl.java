@@ -29,11 +29,11 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
     }
 
     @Override
-    public DotnetFormatCommandResult validate(RepositoryRef ref) {
+    public DotnetFormatCommandResult validate(RepositoryRef ref, String params) {
         Path codebaseDirectoryPath = null;
         try {
             codebaseDirectoryPath = Files.createTempDirectory("bb");
-            return runDotnetFormat(ref, codebaseDirectoryPath);
+            return runDotnetFormat(ref, codebaseDirectoryPath, params);
         } catch (IOException e) {
             logger.error("Failed to create temporary file", e);
             return DotnetFormatCommandResult.executedCorrectly(-1, e.getMessage());
@@ -52,12 +52,12 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
         }
     }
 
-    private DotnetFormatCommandResult runDotnetFormat(RepositoryRef ref, Path codebaseDirectoryPath) {
+    private DotnetFormatCommandResult runDotnetFormat(RepositoryRef ref, Path codebaseDirectoryPath, String params) {
         if (codeService.tryDownloadRepositoryCode(
                 codebaseDirectoryPath,
                 ref.getRepository(),
                 ref.getLatestCommit())) {
-            return dotnetFormatRunner.runDotnetFormat(codebaseDirectoryPath);
+            return dotnetFormatRunner.runDotnetFormat(codebaseDirectoryPath, params);
         } else {
             return DotnetFormatCommandResult.failed("Downloading code failed. Check log file for more information.");
         }
