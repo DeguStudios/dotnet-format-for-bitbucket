@@ -10,29 +10,33 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 @Component("isFormattedWithDotnetFormatMergeCheck")
 public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeCheck {
     private static final String rejectedSummaryMessageWhenRun = "Dotnet format has found issues.";
     private static final String rejectedSummaryMessageWhenCouldNotRun = "Dotnet format could not be run.";
-    public static final String DOTNET_FORMAT_PARAMS = "dotnetFormatParams";
     private final DotnetFormatRefValidator dotnetFormatRefValidator;
     private final PullRequestCommenter pullRequestCommenter;
+    private final DotnetFormatRefValidatorParameterCalculator parameterCalculator;
 
     @Autowired
     public IsFormattedWithDotnetFormatMergeCheck(
             @Qualifier("IdempotentlyCachedDotnetFormatRefValidatorWrapper") DotnetFormatRefValidator validator,
-            PullRequestCommenter pullRequestCommenter) {
+            PullRequestCommenter pullRequestCommenter,
+            DotnetFormatRefValidatorParameterCalculator parameterCalculator) {
         this.dotnetFormatRefValidator = validator;
         this.pullRequestCommenter = pullRequestCommenter;
+        this.parameterCalculator = parameterCalculator;
     }
 
     @Nonnull
     @Override
     public RepositoryHookResult preUpdate(@Nonnull PreRepositoryHookContext context,
                                           @Nonnull PullRequestMergeHookRequest request) {
-        String dotnetFormatParams = context.getSettings().getString(DOTNET_FORMAT_PARAMS);
-        DotnetFormatCommandResult result = dotnetFormatRefValidator.validate(request.getFromRef(), dotnetFormatParams);
+        List<String> allParameters = parameterCalculator.calculateParameters(context.getSettings(), request.getPullRequest());
+        DotnetFormatCommandResult result = dotnetFormatRefValidator.validate(request.getFromRef(), allParameters);
+
         if (result.getExitCode() == 0) {
             return RepositoryHookResult.accepted();
         } else if (!result.hasExecutedCorrectly()) {

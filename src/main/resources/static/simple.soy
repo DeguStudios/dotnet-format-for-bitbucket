@@ -14,4 +14,12 @@
         {param isRequired: 'false' /}
 		{param errorTexts: $errors ? $errors['dotnetFormatParams'] : null /}
     {/call}
+    {call aui.form.checkboxField}
+        {param legendContent: 'Include' /}
+            {param fields: [[
+                          'id': 'shouldUseIncludeParameter',
+                          'labelText': 'Include changed files as --include parameter?',
+                          'isChecked': $config ? $config['shouldUseIncludeParameter'] : null
+                          ]] /}
+    {/call}
 {/template}

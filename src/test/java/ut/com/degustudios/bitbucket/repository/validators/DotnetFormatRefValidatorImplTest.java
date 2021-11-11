@@ -16,6 +16,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -38,7 +40,7 @@ public class DotnetFormatRefValidatorImplTest
     @Mock
     private RepositoryRef ref;
 
-    private String params = "--check22";
+    private List<String> params = Arrays.asList(new String[]{"--check22"});
 
     private DotnetFormatRefValidatorImpl validator;
 

@@ -7,6 +7,7 @@ import ut.com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 
 public class DotnetFormatRunnerTest extends TestCase {
 
@@ -22,7 +23,7 @@ public class DotnetFormatRunnerTest extends TestCase {
         System.setProperty("os.name", WINDOWS_10);
 
         // action
-        dotnetFormatRunner.runDotnetFormat(tmp, " --abc2");
+        dotnetFormatRunner.runDotnetFormat(tmp, Collections.singletonList(" --abc2"));
 
         // result
         Mockito.verify(nativeCommandRunner).runCommand(tmp.toFile(),
@@ -38,7 +39,7 @@ public class DotnetFormatRunnerTest extends TestCase {
         System.setProperty("os.name", LINUX);
 
         // action
-        dotnetFormatRunner.runDotnetFormat(tmp, " --abc");
+        dotnetFormatRunner.runDotnetFormat(tmp, Collections.singletonList(" --abc"));
 
         // result
         Mockito.verify(nativeCommandRunner).runCommand(tmp.toFile(),

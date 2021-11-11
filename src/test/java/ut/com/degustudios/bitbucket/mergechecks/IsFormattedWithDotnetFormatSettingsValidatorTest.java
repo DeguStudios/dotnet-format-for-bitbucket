@@ -1,5 +1,6 @@
 package ut.com.degustudios.bitbucket.mergechecks;
 
+import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidatorParameterCalculator;
 import org.junit.Test;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -35,7 +36,7 @@ public class IsFormattedWithDotnetFormatSettingsValidatorTest
     @Test
     public void additionalParamsValueIsNotRequired()
     {
-        setAdditionalParamsSettingTo(null);
+        setAdditionalParamsSettingTo("--check");
 
         run();
 
@@ -52,8 +53,32 @@ public class IsFormattedWithDotnetFormatSettingsValidatorTest
         verifyNoErrors();
     }
 
+    @Test
+    public void useIncludeParamValueIsNotRequired()
+    {
+        setUseIncludeParamSettingTo(true);
+
+        run();
+
+        verifyNoErrors();
+    }
+
+    @Test
+    public void useIncludeParamValueIsNotValidated()
+    {
+        setUseIncludeParamSettingTo(null);
+
+        run();
+
+        verifyNoErrors();
+    }
+
     private void setAdditionalParamsSettingTo(String value) {
-        when(settings.getString(AdditionalParamsSettingKey)).thenReturn(value);
+        when(settings.getString(DotnetFormatRefValidatorParameterCalculator.DOTNET_FORMAT_PARAMS)).thenReturn(value);
+    }
+
+    private void setUseIncludeParamSettingTo(Boolean value) {
+        when(settings.getBoolean(DotnetFormatRefValidatorParameterCalculator.SHOULD_USE_INCLUDE_PARAMETER)).thenReturn(value);
     }
 
     private void run() {

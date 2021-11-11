@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,7 +36,7 @@ public class IdempotentExecutorTest {
     @Test
     public void executePassesParameterToFunction() throws ExecutionException, InterruptedException {
         String returnValue = "TEST";
-        assertThat(tryExecute((String x, String y) -> x, returnValue).get(), is(returnValue));
+        assertThat(tryExecute((String x, List<String> y) -> x, returnValue).get(), is(returnValue));
     }
 
     @Test
@@ -95,19 +96,19 @@ public class IdempotentExecutorTest {
         assertThat(invocationCounter.get(), is(2));
     }
 
-    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheAllExecutor(BiFunction<T, String, R> executeFunc) {
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheAllExecutor(BiFunction<T, List<String>, R> executeFunc) {
         return new IdempotentExecutor<>(executeFunc, Object::toString, r -> true);
     }
 
-    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheNoneExecutor(BiFunction<T, String, R> executeFunc) {
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheNoneExecutor(BiFunction<T, List<String>, R> executeFunc) {
         return new IdempotentExecutor<>(executeFunc, Object::toString, r -> false);
     }
 
-    private <T> Future<String> tryExecute(BiFunction<T,String,String> executeFunc, String x) {
+    private <T> Future<String> tryExecute(BiFunction<T,List<String>,String> executeFunc, String x) {
         return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc), x);
     }
 
-    private <T> Future<String> tryExecute(BiFunction<T,String,String> executeFunc) {
+    private <T> Future<String> tryExecute(BiFunction<T,List<String>,String> executeFunc) {
         return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc));
     }
 
@@ -117,7 +118,7 @@ public class IdempotentExecutorTest {
 
     private <V> Future<V> tryExecute(IdempotentExecutor executor, V x) {
         try {
-            return executor.execute(x, "--mockParameter");
+            return executor.execute(x, Collections.singletonList("--mockParameter"));
         } catch (ConcurrentException e) {
             logger.error("Exception for conurent excception for exectur: {}", executor, e);
         }
@@ -133,12 +134,12 @@ public class IdempotentExecutorTest {
         return null;
     }
 
-    private <V> V countingPassthrough(AtomicInteger invocationCounter, V x, String params) {
+    private <V> V countingPassthrough(AtomicInteger invocationCounter, V x, List<String> params) {
         invocationCounter.incrementAndGet();
         return x;
     }
 
-    private static <V> V sleepPassthrough(V x, String params) {
+    private static <V> V sleepPassthrough(V x, List<String> params) {
         try {
             Thread.sleep(SLEEP_TIME_MS);
         } catch (InterruptedException e) {
