@@ -90,7 +90,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Test
     public void doesNotCacheInvalidDotNetFormatExecutions() throws ConcurrentException {
         DotnetFormatCommandResult result = DotnetFormatCommandResult.failed("ERROR!");
-        when(executor.execute(eq(ref), eq(params))).thenReturn(CompletableFuture.completedFuture(null));
+        when(executor.execute(ref, params)).thenReturn(CompletableFuture.completedFuture(null));
 
         runValidatorWrapper();
 

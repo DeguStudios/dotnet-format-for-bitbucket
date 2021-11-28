@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -68,11 +70,23 @@ public class CodeService {
 
     private void extractArchive(Path archiveFilePath, Path extractedArchiveDirectoryPath) throws IOException {
         try (ZipFile zipFile = new ZipFile(archiveFilePath.toFile())) {
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            while (entries.hasMoreElements()) {
-                extractZipFile(extractedArchiveDirectoryPath, zipFile, entries.nextElement());
+            ArrayList<? extends ZipEntry> entries = Collections.list(zipFile.entries());
+
+            for (ZipEntry x : entries) {
+                if (!canBeExtracted(extractedArchiveDirectoryPath, x)) {
+                    throw new IOException("ZipEntry is outside of the target directory");
+                }
+            }
+
+            for (ZipEntry zipEntry : entries) {
+                extractZipFile(extractedArchiveDirectoryPath, zipFile, zipEntry);
             }
         }
+    }
+
+    private boolean canBeExtracted(Path extractedArchiveDirectoryPath, ZipEntry zipEntry) throws IOException {
+        File newFile = new File(extractedArchiveDirectoryPath.toString(), zipEntry.getName());
+        return newFile.getCanonicalPath().startsWith(extractedArchiveDirectoryPath.toString());
     }
 
     private void extractZipFile(Path extractedArchiveDirectoryPath, ZipFile zipFile, ZipEntry zipEntry) throws IOException {

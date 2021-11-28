@@ -12,6 +12,7 @@ import com.degustudios.bitbucket.content.CodeService;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.doAnswer;
@@ -64,30 +65,57 @@ public class CodeServiceTest {
     }
 
     @Test
+    public void extractsArchiveCorrectly() throws IOException {
+        boolean result = runServiceForFile("archives/codebase.zip");
+
+        assertTrue(result);
+        List<Path> itemsAfter = Files.list(temporaryDirectory).collect(Collectors.toList());
+        assertThat(itemsAfter.size(), is(1));
+    }
+
+    @Test
     public void cleansUpTemporaryArchive() throws IOException {
         List<Path> itemsBefore = Files.list(temporaryDirectory.getParent()).collect(Collectors.toList());
 
+        runServiceForFile("archives/codebase.zip");
+
+        List<Path> itemsAfter = Files.list(temporaryDirectory.getParent()).collect(Collectors.toList());
+        assertThat(itemsAfter.size(), is(itemsBefore.size()));
+    }
+
+    @Test
+    public void throwsExceptionWhenZipSlipVulnerabilityIsDetected()  {
+        boolean result = runServiceForFile("archives/zip-slip.zip");
+
+        assertFalse(result);
+    }
+
+    @Test
+    public void whenZipSlipVulnerabilityIsDetectedNoFilesAreExtracted() throws IOException {
+        runServiceForFile("archives/zip-slip.zip");
+
+        List<Path> itemsAfter = Files.list(temporaryDirectory).collect(Collectors.toList());
+        assertThat(itemsAfter.size(), is(0));
+    }
+
+    private boolean runServiceForFile(String s) {
         doAnswer(invocationOnMock -> {
             TypeAwareOutputSupplier supplier = (TypeAwareOutputSupplier) invocationOnMock.getArguments()[1];
             OutputStream outputStream = supplier.getStream("archive/zip");
-            try (InputStream inputStream = CodeServiceTest.class.getResourceAsStream("archives/codebase.zip")) {
+            try (InputStream inputStream = CodeServiceTest.class.getResourceAsStream(s)) {
                 CodeServiceTest.this.copy(inputStream, outputStream);
             }
             return null;
         })
-        .when(contentService)
-        .streamArchive(notNull(ArchiveRequest.class), notNull(TypeAwareOutputSupplier.class));
+                .when(contentService)
+                .streamArchive(notNull(ArchiveRequest.class), notNull(TypeAwareOutputSupplier.class));
 
         CodeService codeService = new CodeService(contentService, securityService);
 
-        codeService.tryDownloadRepositoryCode(
+        return codeService.tryDownloadRepositoryCode(
                 temporaryDirectory,
                 repository,
                 commitId);
-
-
-        List<Path> itemsAfter = Files.list(temporaryDirectory.getParent()).collect(Collectors.toList());
-        assertThat(itemsAfter.size(), is(itemsBefore.size()));
     }
 
     void copy(InputStream source, OutputStream target) throws IOException {

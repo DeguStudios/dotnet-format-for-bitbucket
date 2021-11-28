@@ -31,7 +31,7 @@ public class DotnetFormatRefValidatorParameterCalculator {
 
     public List<String> calculateParameters(Settings settings, PullRequest pullRequest) {
         Stream<String> dotNetFormatParametersStream = streamDotNetFormatParameters(settings);
-        if (!settings.getBoolean(SHOULD_USE_INCLUDE_PARAMETER)) {
+        if (!settings.getBoolean(SHOULD_USE_INCLUDE_PARAMETER, false)) {
             return dotNetFormatParametersStream.collect(Collectors.toList());
         }
 
@@ -57,7 +57,7 @@ public class DotnetFormatRefValidatorParameterCalculator {
         }
 
         List<String> allMatches = new LinkedList<>();
-        Matcher matcher = Pattern.compile("(\".*?\"|\\S+)").matcher(dotnetFormatParametersInlined);
+        Matcher matcher = Pattern.compile("(\"[^\\\"]*+\"|\\S+)").matcher(dotnetFormatParametersInlined);
         while (matcher.find()) {
             allMatches.add(matcher.group());
         }
