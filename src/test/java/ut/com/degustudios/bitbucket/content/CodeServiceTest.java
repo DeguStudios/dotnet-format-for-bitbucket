@@ -84,15 +84,15 @@ public class CodeServiceTest {
     }
 
     @Test
-    public void throwsExceptionWhenZipSlipVulnerabilityIsDetected() throws IOException {
-        boolean result = runServiceForFile("archives/zip-slip-win.zip");
+    public void throwsExceptionWhenZipSlipVulnerabilityIsDetected()  {
+        boolean result = runServiceForFile("archives/zip-slip.zip");
 
         assertFalse(result);
     }
 
     @Test
     public void whenZipSlipVulnerabilityIsDetectedNoFilesAreExtracted() throws IOException {
-        runServiceForFile("archives/zip-slip-win.zip");
+        runServiceForFile("archives/zip-slip.zip");
 
         List<Path> itemsAfter = Files.list(temporaryDirectory).collect(Collectors.toList());
         assertThat(itemsAfter.size(), is(0));

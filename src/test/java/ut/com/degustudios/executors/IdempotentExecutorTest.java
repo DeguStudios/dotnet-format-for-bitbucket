@@ -13,17 +13,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IdempotentExecutorTest {
-    private static final int SLEEP_TIME_MS = 1000;
-    public static final int EMPTY_EXECUTION_TIME_MS = 100;
+    private static final int TIMEOUT_IN_MS = 1000;
     private static final Logger logger = LoggerFactory.getLogger(IdempotentExecutorTest.class);
 
     @Test
@@ -39,39 +41,36 @@ public class IdempotentExecutorTest {
     }
 
     @Test
-    public void executeReturnsImmediately() {
-        IdempotentExecutor executor = getDefaultKeyCacheAllExecutor(IdempotentExecutorTest::sleepPassthrough);
-        long start = System.currentTimeMillis();
-        tryExecute(executor);
-        long end = System.currentTimeMillis();
-
-        assertThat(end - start < 100, is(true));
-    }
-
-    @Test
     public void canExecuteMultipleItemsAtTheSameTime() {
+        final AtomicBoolean unlockThreads = new AtomicBoolean(false);
+        AtomicInteger invocationCounter = new AtomicInteger(0);
         String expectedResult = "This should run asynchronously!";
         String[] parameters = expectedResult.split(" ");
-        IdempotentExecutor<String, String> executor = getDefaultKeyCacheAllExecutor(IdempotentExecutorTest::sleepPassthrough);
+        IdempotentExecutor<String, String> executor =
+                getDefaultKeyCacheAllExecutor((x, params) -> countingAndWaitingPassthrough(invocationCounter, x, unlockThreads));
 
-        long start = System.currentTimeMillis();
-        String actualResult = Arrays.stream(parameters)
+        List<Future<String>> futures = Arrays.stream(parameters)
                 .map(x -> tryExecute(executor, x))
-                .collect(Collectors.toList())
+                .collect(Collectors.toList());
+
+        await()
+            .atMost(TIMEOUT_IN_MS, TimeUnit.MILLISECONDS)
+            .untilAsserted(() -> assertThat(invocationCounter.get(), is(parameters.length)));
+
+        unlockThreads.set(true);
+
+        String actualResult = futures
                 .stream()
                 .map(IdempotentExecutorTest::unwrap)
                 .collect(Collectors.joining(" "));
-        long end = System.currentTimeMillis();
-
         assertThat(actualResult, is(expectedResult));
-        assertThat(end - start < SLEEP_TIME_MS + EMPTY_EXECUTION_TIME_MS, is(true));
     }
 
     @Test
     public void willOnlyExecuteTheSameParametersOnceIfCacheFunctionReturnsFalse() {
         AtomicInteger invocationCounter = new AtomicInteger(0);
         String[] parameters = Collections.nCopies(1000, "SAME").toArray(new String[0]);
-        IdempotentExecutor<String, String> executor = getDefaultKeyCacheAllExecutor((x, y) -> countingPassthrough(invocationCounter, x, y));
+        IdempotentExecutor<String, String> executor = getDefaultKeyCacheAllExecutor((x, y) -> countingPassthrough(invocationCounter, x));
 
         Arrays.stream(parameters)
                 .map(x -> tryExecute(executor, x))
@@ -87,7 +86,7 @@ public class IdempotentExecutorTest {
     public void willExecuteTheSameParametersAgainIfCacheFunctionReturnsFalse() {
         AtomicInteger invocationCounter = new AtomicInteger(0);
         String param = "SAME";
-        IdempotentExecutor<String, String> executor = getDefaultKeyCacheNoneExecutor((x,y) -> countingPassthrough(invocationCounter, x, y));
+        IdempotentExecutor<String, String> executor = getDefaultKeyCacheNoneExecutor((x,y) -> countingPassthrough(invocationCounter, x));
 
         unwrap(tryExecute(executor, param));
         unwrap(tryExecute(executor, param));
@@ -133,16 +132,14 @@ public class IdempotentExecutorTest {
         return null;
     }
 
-    private <V> V countingPassthrough(AtomicInteger invocationCounter, V x, List<String> params) {
+    private <V> V countingPassthrough(AtomicInteger invocationCounter, V x) {
         invocationCounter.incrementAndGet();
         return x;
     }
 
-    private static <V> V sleepPassthrough(V x, List<String> params) {
-        try {
-            Thread.sleep(SLEEP_TIME_MS);
-        } catch (InterruptedException e) {
-        }
+    private <V> V countingAndWaitingPassthrough(AtomicInteger invocationCounter, V x, AtomicBoolean atomic) {
+        invocationCounter.incrementAndGet();
+        await().atMost(TIMEOUT_IN_MS, TimeUnit.MILLISECONDS).untilTrue(atomic);
         return x;
     }
 }
