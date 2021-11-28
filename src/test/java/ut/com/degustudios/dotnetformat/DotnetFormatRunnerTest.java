@@ -1,11 +1,10 @@
 package ut.com.degustudios.dotnetformat;
 
 import com.degustudios.dotnetformat.DotnetFormatRunner;
-import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import ut.com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
+import com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
 
 import java.io.IOException;
 import java.nio.file.Files;

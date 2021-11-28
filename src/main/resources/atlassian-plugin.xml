@@ -20,6 +20,6 @@
             <view>com.degustudios.bitbucket.mergechecks.formContents</view>
             <directory location="/static/"/>
         </config-form>
-        <validator>com.degustudios.bitbucket.mergechecks.IsFormattedWithDotnetFormatSettingsValidator</validator>
+        <validator>com.degustudios.bitbucket.mergechecks.settings.validators.IsFormattedWithDotnetFormatSettingsValidator</validator>
     </repository-hook>
 </atlassian-plugin>

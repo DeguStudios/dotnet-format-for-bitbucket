@@ -1,4 +1,4 @@
-package com.degustudios.bitbucket.mergechecks;
+package com.degustudios.bitbucket.mergechecks.settings.validators;
 
 import com.atlassian.bitbucket.scope.Scope;
 import com.atlassian.bitbucket.setting.Settings;

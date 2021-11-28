@@ -1,13 +1,11 @@
 package com.degustudios.dotnetformat;
 
 import org.springframework.stereotype.Service;
-import ut.com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
+import com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
 
-import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service

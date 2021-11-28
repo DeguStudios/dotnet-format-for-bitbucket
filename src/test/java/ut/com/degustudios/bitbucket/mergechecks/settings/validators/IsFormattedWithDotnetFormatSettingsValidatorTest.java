@@ -1,4 +1,4 @@
-package ut.com.degustudios.bitbucket.mergechecks;
+package ut.com.degustudios.bitbucket.mergechecks.settings.validators;
 
 import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidatorParameterCalculator;
 import org.junit.Test;
@@ -10,15 +10,13 @@ import static org.mockito.Mockito.*;
 
 import com.atlassian.bitbucket.setting.SettingsValidationErrors;
 import com.atlassian.bitbucket.scope.Scope;
-import com.degustudios.bitbucket.mergechecks.IsFormattedWithDotnetFormatSettingsValidator;
+import com.degustudios.bitbucket.mergechecks.settings.validators.IsFormattedWithDotnetFormatSettingsValidator;
 import com.atlassian.bitbucket.setting.Settings;
 
 
 @RunWith (MockitoJUnitRunner.class)
 public class IsFormattedWithDotnetFormatSettingsValidatorTest
 {
-    private static final String AdditionalParamsSettingKey = "dotnetFormatParams";
-
     @Mock
     private Settings settings;
     @Mock

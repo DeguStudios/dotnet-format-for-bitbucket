@@ -3,7 +3,7 @@ package com.degustudios.dotnetformat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import ut.com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
+import com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
 
 import java.io.File;
 import java.io.IOException;
