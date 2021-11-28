@@ -8,26 +8,17 @@ import com.atlassian.bitbucket.pull.PullRequest;
 import com.atlassian.bitbucket.pull.PullRequestRef;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.setting.Settings;
-import com.degustudios.bitbucket.content.CodeService;
 import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidator;
 import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidatorParameterCalculator;
 import com.degustudios.bitbucket.mergechecks.IsFormattedWithDotnetFormatMergeCheck;
 import com.degustudios.bitbucket.mergechecks.PullRequestCommenter;
-import com.degustudios.bitbucket.repository.validators.DotnetFormatRefValidatorImpl;
-import com.degustudios.bitbucket.repository.validators.IdempotentlyCachedDotnetFormatRefValidatorWrapper;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
-import com.degustudios.dotnetformat.DotnetFormatRunner;
-import com.degustudios.executors.IdempotentExecutorBuilder;
-import org.hamcrest.core.IsNull;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 

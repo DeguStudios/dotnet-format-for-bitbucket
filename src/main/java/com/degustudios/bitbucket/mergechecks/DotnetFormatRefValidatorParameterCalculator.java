@@ -13,6 +13,8 @@ import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,29 +30,50 @@ public class DotnetFormatRefValidatorParameterCalculator {
     }
 
     public List<String> calculateParameters(Settings settings, PullRequest pullRequest) {
-        //TODO: handle empty change list, false for include parameter, tests
-        String dotnetFormatParams = settings.getString(DOTNET_FORMAT_PARAMS);
+        Stream<String> dotNetFormatParametersStream = streamDotNetFormatParameters(settings);
+        if (!settings.getBoolean(SHOULD_USE_INCLUDE_PARAMETER)) {
+            return dotNetFormatParametersStream.collect(Collectors.toList());
+        }
+
         Collection<String> includePaths = getChanges(pullRequest);
+        if (includePaths.isEmpty()){
+            return dotNetFormatParametersStream.collect(Collectors.toList());
+        }
+
         String includeParameter = "--include";
 
-        List<String> allParameters = Stream.concat(
+        return Stream.concat(
                 Stream.concat(
-                        Arrays.stream(dotnetFormatParams.split(" ")),
+                        dotNetFormatParametersStream,
                         Collections.singletonList(includeParameter).stream()),
                 includePaths.stream())
                 .collect(Collectors.toList());
-        return allParameters;
+    }
+
+    private Stream<String> streamDotNetFormatParameters(Settings settings) {
+        String dotnetFormatParametersInlined = settings.getString(DOTNET_FORMAT_PARAMS);
+        if (dotnetFormatParametersInlined == null) {
+            dotnetFormatParametersInlined = "";
+        }
+
+        List<String> allMatches = new LinkedList<>();
+        Matcher matcher = Pattern.compile("(\".*?\"|\\S+)").matcher(dotnetFormatParametersInlined);
+        while (matcher.find()) {
+            allMatches.add(matcher.group());
+        }
+
+        return allMatches.stream().filter(s -> !s.isEmpty());
     }
 
     private Collection<String> getChanges(PullRequest request) {
         ScmCommandFactory commandFactory = scmService.getCommandFactory(request.getFromRef().getRepository());
-        int pageSize = 10;
+        int pageSize = 100;
         Set<String> changes = new HashSet<>();
         Page<Change> query = null;
 
         do {
             PageRequest pageRequest = query == null
-                    ? new PageRequestImpl(0, 10)
+                    ? new PageRequestImpl(0, pageSize)
                     : query.getNextPageRequest().buildRestrictedPageRequest(pageSize);
             query = commandFactory.changes(
                     new ChangesCommandParameters.Builder()
@@ -59,7 +82,10 @@ public class DotnetFormatRefValidatorParameterCalculator {
                             .build(),
                     pageRequest).call();
 
-            changes.addAll(query.stream().map(change -> change.getPath().toString()).collect(Collectors.toSet()));
+            changes.addAll(query
+                    .stream()
+                    .map(change -> change.getPath().toString())
+                    .collect(Collectors.toSet()));
         }
         while (!query.getIsLastPage());
 
