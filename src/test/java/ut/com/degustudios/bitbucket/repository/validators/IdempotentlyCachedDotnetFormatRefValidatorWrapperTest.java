@@ -202,7 +202,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
 
     private void assertCacheDotNetFormatExecutions(int exitCode, String s, boolean shouldCache) throws ConcurrentException {
         DotnetFormatCommandResult result = DotnetFormatCommandResult.executedCorrectly(exitCode, s);
-        when(executor.execute(eq(ref), eq(params))).thenReturn(CompletableFuture.completedFuture(null));
+        when(executor.execute(ref, params)).thenReturn(CompletableFuture.completedFuture(null));
 
         runValidatorWrapper();
 
