@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class PullRequestCommenterImpl implements PullRequestCommenter {
-    private final static int PAGE_SIZE = 25;
-    private final static int CHARACTER_LIMIT_PER_COMMENT = 32768;
+    private static final int PAGE_SIZE = 25;
+    private static final int CHARACTER_LIMIT_PER_COMMENT = 32768;
     private final PullRequestService pullRequestService;
     private final Pattern commentTextPattern = Pattern.compile("^For commit: \\[([a-f0-9]*)\\]\n?.*", Pattern.MULTILINE | Pattern.DOTALL);
     private final CommentService commentService;
