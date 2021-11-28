@@ -55,7 +55,7 @@ public class IdempotentExecutor<T,R> {
     private Future<R> scheduleForExecution(T param1, List<String> param2) {
         return executor.submit(() -> {
             R result = executeFunc.apply(param1, param2);
-            if (!shouldCacheFunc.apply(result)) {
+            if (!Boolean.TRUE.equals(shouldCacheFunc.apply(result))) {
                 cache.remove(mapToKeyFunc.apply(param1));
             }
             return result;

@@ -9,6 +9,6 @@ import javax.annotation.Nonnull;
 public class IsFormattedWithDotnetFormatSettingsValidator implements SettingsValidator {
     @Override
     public void validate(@Nonnull Settings settings, @Nonnull SettingsValidationErrors errors, @Nonnull Scope scope) {
-
+        //Nothing to validate - all parameters are optional
     }
 }

@@ -23,12 +23,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class PullRequestCommenterImpl implements PullRequestCommenter {
+    private final static int PAGE_SIZE = 25;
+    private final static int CHARACTER_LIMIT_PER_COMMENT = 32768;
     private final PullRequestService pullRequestService;
     private final Pattern commentTextPattern = Pattern.compile("^For commit: \\[([a-f0-9]*)\\]\n?.*", Pattern.MULTILINE | Pattern.DOTALL);
     private final CommentService commentService;
     private final AuthenticationContext authenticationContext;
-    private final int pageSize = 25;
-    private final int characterLimitPerComment = 32768;
 
     public PullRequestCommenterImpl(@ComponentImport PullRequestService pullRequestService,
                                     @ComponentImport CommentService commentService,
@@ -74,12 +74,12 @@ public class PullRequestCommenterImpl implements PullRequestCommenter {
         Page<PullRequestActivity> query = null;
         do {
             PageRequest pageRequest = query == null
-                    ? new PageRequestImpl(0, pageSize)
-                    : query.getNextPageRequest().buildRestrictedPageRequest(pageSize);
+                    ? new PageRequestImpl(0, PAGE_SIZE)
+                    : query.getNextPageRequest().buildRestrictedPageRequest(PAGE_SIZE);
             query = getPageOfComments(pullRequest, pageRequest);
 
             serviceComments.addAll(query.stream()
-                    .map(activity -> (PullRequestCommentActivity)activity)
+                    .map(PullRequestCommentActivity.class::cast)
                     .filter(activity -> activity.getUser().equals(user))
                     .filter(activity -> isAboutCurrentChange(activity.getComment(), pullRequest))
                     .collect(Collectors.toSet()));
@@ -98,10 +98,10 @@ public class PullRequestCommenterImpl implements PullRequestCommenter {
                         .filter(x -> !x.isEmpty())
                         .collect(Collectors.toList()),
                 "\n");
-        return TrimTo(formattedComment, characterLimitPerComment);
+        return trimTo(formattedComment, CHARACTER_LIMIT_PER_COMMENT);
     }
 
-    private String TrimTo(String text, int limt) {
+    private String trimTo(String text, int limt) {
         if (text.length() <= limt) {
             return text;
         }

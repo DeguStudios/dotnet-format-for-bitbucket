@@ -14,8 +14,8 @@ import java.util.List;
 
 @Component("isFormattedWithDotnetFormatMergeCheck")
 public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeCheck {
-    private static final String rejectedSummaryMessageWhenRun = "Dotnet format has found issues.";
-    private static final String rejectedSummaryMessageWhenCouldNotRun = "Dotnet format could not be run.";
+    private static final String REJECTED_SUMMARY_MESSAGE_WHEN_RUN = "Dotnet format has found issues.";
+    private static final String REJECTED_SUMMARY_MESSAGE_WHEN_COULD_NOT_RUN = "Dotnet format could not be run.";
     private final DotnetFormatRefValidator dotnetFormatRefValidator;
     private final PullRequestCommenter pullRequestCommenter;
     private final DotnetFormatRefValidatorParameterCalculator parameterCalculator;
@@ -40,13 +40,13 @@ public class IsFormattedWithDotnetFormatMergeCheck implements RepositoryMergeChe
         if (result.getExitCode() == 0) {
             return RepositoryHookResult.accepted();
         } else if (!result.hasExecutedCorrectly()) {
-            return RepositoryHookResult.rejected(rejectedSummaryMessageWhenCouldNotRun, result.getMessage());
+            return RepositoryHookResult.rejected(REJECTED_SUMMARY_MESSAGE_WHEN_COULD_NOT_RUN, result.getMessage());
         } else {
             pullRequestCommenter.addComment(
                     request.getPullRequest(),
                     "dotnet-format results:" + System.lineSeparator() + result.getMessage());
             return RepositoryHookResult.rejected(
-                    rejectedSummaryMessageWhenRun,
+                    REJECTED_SUMMARY_MESSAGE_WHEN_RUN,
                     "Dotnet format exit code: " + result.getExitCode());
         }
     }

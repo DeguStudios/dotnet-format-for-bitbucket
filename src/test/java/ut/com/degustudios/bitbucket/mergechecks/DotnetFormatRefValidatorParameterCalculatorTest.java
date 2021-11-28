@@ -200,6 +200,8 @@ public class DotnetFormatRefValidatorParameterCalculatorTest {
     private void setupIncludeParameterTo(boolean b) {
         when(settings.getBoolean(DotnetFormatRefValidatorParameterCalculator.SHOULD_USE_INCLUDE_PARAMETER))
                 .thenReturn(b);
+        when(settings.getBoolean(DotnetFormatRefValidatorParameterCalculator.SHOULD_USE_INCLUDE_PARAMETER, false))
+                .thenReturn(b);
     }
 
     private void setupDotNetFormatParameterTo(String dotNetFormatSingleParameter) {

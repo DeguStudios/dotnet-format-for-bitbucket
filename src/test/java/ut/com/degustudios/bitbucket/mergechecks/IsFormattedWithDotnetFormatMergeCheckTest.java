@@ -138,7 +138,7 @@ public class IsFormattedWithDotnetFormatMergeCheckTest {
 
         checker.preUpdate(context, request);
 
-        verify(validator).validate(eq(pullRequest.getFromRef()), eq(expectedParams));
+        verify(validator).validate(pullRequest.getFromRef(), expectedParams);
     }
 
     private RepositoryHookVeto getVeto(RepositoryHookResult pullRequestResult) {
