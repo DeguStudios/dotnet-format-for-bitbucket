@@ -16,9 +16,12 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -41,7 +44,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Mock
     private IdempotentExecutor<RepositoryRef, DotnetFormatCommandResult> executor;
     @Captor
-    private ArgumentCaptor<BiFunction<RepositoryRef, String, DotnetFormatCommandResult>> scheduleFuncCaptor;
+    private ArgumentCaptor<BiFunction<RepositoryRef, List<String>, DotnetFormatCommandResult>> scheduleFuncCaptor;
     @Captor
     private ArgumentCaptor<Function<RepositoryRef, String>> keyMapFuncCaptor;
     @Captor
@@ -49,12 +52,12 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Mock
     private Repository repository;
 
-    private String params;
+    private List<String> params;
 
     @Before
     public void initialize(){
         when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any(), any())).thenReturn(executor);
-        params = "--check";
+        params = Arrays.asList(new String[]{"--check"});
     }
 
     @Test

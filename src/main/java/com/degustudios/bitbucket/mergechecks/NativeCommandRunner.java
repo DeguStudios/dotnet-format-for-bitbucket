@@ -1,4 +1,4 @@
-package ut.com.degustudios.bitbucket.mergechecks;
+package com.degustudios.bitbucket.mergechecks;
 
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 

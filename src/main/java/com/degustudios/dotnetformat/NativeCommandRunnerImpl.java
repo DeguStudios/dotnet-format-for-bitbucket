@@ -3,7 +3,7 @@ package com.degustudios.dotnetformat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import ut.com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
+import com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,19 +14,18 @@ public class NativeCommandRunnerImpl implements NativeCommandRunner {
 
     private final Logger logger = LoggerFactory.getLogger(NativeCommandRunnerImpl.class);
 
-
     @Override
-    public DotnetFormatCommandResult runCommand(File workingDirectory, String... command) {
+    public DotnetFormatCommandResult runCommand(File workingDirectory, String... commands) {
         ProcessBuilder processBuilder = new ProcessBuilder();
         Process process;
         try {
             process = processBuilder
-                    .command(command)
+                    .command(commands)
                     .directory(workingDirectory)
                     .start();
         } catch (IOException e) {
             logger.error("IO exception during running command  with params:  {} Directory: {}",
-                    String.join(", ", command), workingDirectory, e);
+                    String.join(", ", commands), workingDirectory, e);
             return DotnetFormatCommandResult.failed(e);
         }
         StringBuilder messageBuffer = new StringBuilder();
@@ -40,7 +39,7 @@ public class NativeCommandRunnerImpl implements NativeCommandRunner {
             exitCode = process.waitFor();
         } catch (InterruptedException e) {
             logger.error("Process was aborted for: parameters: {} in {}",
-                    String.join(", ", command), workingDirectory, e);
+                    String.join(", ", commands), workingDirectory, e);
             Thread.currentThread().interrupt();
             return DotnetFormatCommandResult.failed(e);
         }

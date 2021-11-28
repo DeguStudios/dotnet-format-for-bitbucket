@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Service("IdempotentlyCachedDotnetFormatRefValidatorWrapper")
 public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements DotnetFormatRefValidator {
@@ -30,7 +31,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements Dotnet
                         && Arrays.stream(CacheableExitCodes).anyMatch(x -> x == result.getExitCode()));
     }
 
-    public DotnetFormatCommandResult validate(RepositoryRef ref, String params) {
+    public DotnetFormatCommandResult validate(RepositoryRef ref, List<String> params) {
         try {
             return executor.execute(ref, params).get();
         } catch (InterruptedException interruptedException) {

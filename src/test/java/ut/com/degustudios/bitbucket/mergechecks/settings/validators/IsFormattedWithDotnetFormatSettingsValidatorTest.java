@@ -1,5 +1,6 @@
-package ut.com.degustudios.bitbucket.mergechecks;
+package ut.com.degustudios.bitbucket.mergechecks.settings.validators;
 
+import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidatorParameterCalculator;
 import org.junit.Test;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -9,15 +10,13 @@ import static org.mockito.Mockito.*;
 
 import com.atlassian.bitbucket.setting.SettingsValidationErrors;
 import com.atlassian.bitbucket.scope.Scope;
-import com.degustudios.bitbucket.mergechecks.IsFormattedWithDotnetFormatSettingsValidator;
+import com.degustudios.bitbucket.mergechecks.settings.validators.IsFormattedWithDotnetFormatSettingsValidator;
 import com.atlassian.bitbucket.setting.Settings;
 
 
 @RunWith (MockitoJUnitRunner.class)
 public class IsFormattedWithDotnetFormatSettingsValidatorTest
 {
-    private static final String AdditionalParamsSettingKey = "dotnetFormatParams";
-
     @Mock
     private Settings settings;
     @Mock
@@ -35,7 +34,7 @@ public class IsFormattedWithDotnetFormatSettingsValidatorTest
     @Test
     public void additionalParamsValueIsNotRequired()
     {
-        setAdditionalParamsSettingTo(null);
+        setAdditionalParamsSettingTo("--check");
 
         run();
 
@@ -52,8 +51,32 @@ public class IsFormattedWithDotnetFormatSettingsValidatorTest
         verifyNoErrors();
     }
 
+    @Test
+    public void useIncludeParamValueIsNotRequired()
+    {
+        setUseIncludeParamSettingTo(true);
+
+        run();
+
+        verifyNoErrors();
+    }
+
+    @Test
+    public void useIncludeParamValueIsNotValidated()
+    {
+        setUseIncludeParamSettingTo(null);
+
+        run();
+
+        verifyNoErrors();
+    }
+
     private void setAdditionalParamsSettingTo(String value) {
-        when(settings.getString(AdditionalParamsSettingKey)).thenReturn(value);
+        when(settings.getString(DotnetFormatRefValidatorParameterCalculator.DOTNET_FORMAT_PARAMS)).thenReturn(value);
+    }
+
+    private void setUseIncludeParamSettingTo(Boolean value) {
+        when(settings.getBoolean(DotnetFormatRefValidatorParameterCalculator.SHOULD_USE_INCLUDE_PARAMETER)).thenReturn(value);
     }
 
     private void run() {

@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 @Service("DotnetFormatRefValidatorImpl")
 public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
@@ -29,7 +30,7 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
     }
 
     @Override
-    public DotnetFormatCommandResult validate(RepositoryRef ref, String params) {
+    public DotnetFormatCommandResult validate(RepositoryRef ref, List<String> params) {
         Path codebaseDirectoryPath = null;
         try {
             codebaseDirectoryPath = Files.createTempDirectory("bb");
@@ -52,7 +53,7 @@ public class DotnetFormatRefValidatorImpl implements DotnetFormatRefValidator {
         }
     }
 
-    private DotnetFormatCommandResult runDotnetFormat(RepositoryRef ref, Path codebaseDirectoryPath, String params) {
+    private DotnetFormatCommandResult runDotnetFormat(RepositoryRef ref, Path codebaseDirectoryPath, List<String> params) {
         if (codeService.tryDownloadRepositoryCode(
                 codebaseDirectoryPath,
                 ref.getRepository(),

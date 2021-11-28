@@ -1,9 +1,12 @@
 package com.degustudios.dotnetformat;
 
 import org.springframework.stereotype.Service;
-import ut.com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
+import com.degustudios.bitbucket.mergechecks.NativeCommandRunner;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 public class DotnetFormatRunner {
@@ -13,7 +16,7 @@ public class DotnetFormatRunner {
         this.commandRunner = commandRunner;
     }
 
-    public DotnetFormatCommandResult runDotnetFormat(Path workingDirectory, String param) {
+    public DotnetFormatCommandResult runDotnetFormat(Path workingDirectory, List<String> param) {
         String shell;
         String executeSwitch;
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
@@ -23,7 +26,10 @@ public class DotnetFormatRunner {
             shell = "sh";
             executeSwitch = "-c";
         }
-       return commandRunner.runCommand(workingDirectory.toFile(), shell, executeSwitch, "dotnet format", param);
+        String[] allParams = Stream.concat(
+                Arrays.stream(new String[]{shell, executeSwitch, "dotnet format"}),
+                param.stream()).toArray(String[]::new);
+        return commandRunner.runCommand(workingDirectory.toFile(), allParams);
 
     }
 
