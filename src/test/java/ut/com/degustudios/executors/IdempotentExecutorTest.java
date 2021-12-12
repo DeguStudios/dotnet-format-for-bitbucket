@@ -1,6 +1,7 @@
 package ut.com.degustudios.executors;
 
 import com.degustudios.executors.IdempotentExecutor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -20,6 +22,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -27,6 +30,8 @@ import static org.junit.Assert.assertThat;
 public class IdempotentExecutorTest {
     private static final int TIMEOUT_IN_MS = 1000;
     private static final Logger logger = LoggerFactory.getLogger(IdempotentExecutorTest.class);
+    private static final List<String> params = Arrays.asList("--mockParameter", "--otherParameter");
+    private static final String input = "INPUT PARAMETER";
 
     @Test
     public void executeReturnsFutureValueFromFunction() throws ExecutionException, InterruptedException {
@@ -35,9 +40,19 @@ public class IdempotentExecutorTest {
     }
 
     @Test
-    public void executePassesParameterToFunction() throws ExecutionException, InterruptedException {
-        String returnValue = "TEST";
-        assertThat(tryExecute((String x, List<String> y) -> x, returnValue).get(), is(returnValue));
+    public void executePassesInputParametersToKeyMapFunction() throws ExecutionException, InterruptedException {
+        String expectedKey = input + StringUtils.join(params);
+        List<String> mapFuncCalls = new LinkedList<>();
+
+        tryExecute(
+                (String x, List<String> y) -> x,
+                (String x, List<String> y) -> {
+                    mapFuncCalls.add(x + StringUtils.join(y));
+                    return "STUB";
+                }).get();
+
+        assertThat(mapFuncCalls.stream().distinct().count(), is(1L));
+        assertThat(mapFuncCalls, hasItem(expectedKey));
     }
 
     @Test
@@ -94,31 +109,43 @@ public class IdempotentExecutorTest {
         assertThat(invocationCounter.get(), is(2));
     }
 
+    private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheAllExecutor(
+            BiFunction<T, List<String>, R> executeFunc,
+            BiFunction<T, List<String>, String> mapKeyFunc) {
+        return new IdempotentExecutor<>(executeFunc, mapKeyFunc, r -> true);
+    }
+
     private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheAllExecutor(BiFunction<T, List<String>, R> executeFunc) {
-        return new IdempotentExecutor<>(executeFunc, Object::toString, r -> true);
+        return new IdempotentExecutor<>(executeFunc, IdempotentExecutorTest::defaultKeyMapper, r -> true);
     }
 
     private <T,R> IdempotentExecutor<T,R> getDefaultKeyCacheNoneExecutor(BiFunction<T, List<String>, R> executeFunc) {
-        return new IdempotentExecutor<>(executeFunc, Object::toString, r -> false);
+        return new IdempotentExecutor<>(executeFunc, IdempotentExecutorTest::defaultKeyMapper, r -> false);
     }
 
-    private <T> Future<String> tryExecute(BiFunction<T,List<String>,String> executeFunc, String x) {
-        return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc), x);
+    private static <T> String defaultKeyMapper (T input, List<String> params) {
+        return input.toString() + StringUtils.join(params);
     }
 
-    private <T> Future<String> tryExecute(BiFunction<T,List<String>,String> executeFunc) {
+    private Future<String> tryExecute(
+            BiFunction<String,List<String>,String> executeFunc,
+            BiFunction<String,List<String>,String> mapFunc) {
+        return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc, mapFunc));
+    }
+
+    private Future<String> tryExecute(BiFunction<String,List<String>,String> executeFunc) {
         return tryExecute(getDefaultKeyCacheAllExecutor(executeFunc));
     }
 
-    private Future<String> tryExecute(IdempotentExecutor executor) {
-        return tryExecute(executor, "STUB");
+    private <R> Future<R> tryExecute(IdempotentExecutor<String,R> executor) {
+        return tryExecute(executor, input);
     }
 
-    private <V> Future<V> tryExecute(IdempotentExecutor executor, V x) {
+    private <T, R> Future<R> tryExecute(IdempotentExecutor<T, R> executor, T x) {
         try {
-            return executor.execute(x, Collections.singletonList("--mockParameter"));
+            return executor.execute(x, params);
         } catch (ConcurrentException e) {
-            logger.error("Exception for conurent excception for exectur: {}", executor, e);
+            logger.error("Exception for concurrent exception for executor: {}", executor, e);
         }
         return null;
     }

@@ -7,6 +7,7 @@ import com.degustudios.bitbucket.repository.validators.IdempotentlyCachedDotnetF
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import com.degustudios.executors.IdempotentExecutor;
 import com.degustudios.executors.IdempotentExecutorBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,9 +20,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -46,7 +46,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Captor
     private ArgumentCaptor<BiFunction<RepositoryRef, List<String>, DotnetFormatCommandResult>> scheduleFuncCaptor;
     @Captor
-    private ArgumentCaptor<Function<RepositoryRef, String>> keyMapFuncCaptor;
+    private ArgumentCaptor<BiFunction<RepositoryRef, List<String>, String>> keyMapFuncCaptor;
     @Captor
     private ArgumentCaptor<Function<DotnetFormatCommandResult, Boolean>> shouldCacheFuncCaptor;
     @Mock
@@ -57,7 +57,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     @Before
     public void initialize(){
         when(executorBuilder.<RepositoryRef, DotnetFormatCommandResult>build(any(), any(), any())).thenReturn(executor);
-        params = Arrays.asList(new String[]{"--check"});
+        params = Arrays.asList("--check", "-v");
     }
 
     @Test
@@ -73,7 +73,7 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     }
 
     @Test
-    public void correctlyMapsRefToKey() throws ConcurrentException {
+    public void correctlyMapsRefAndParamsToKey() throws ConcurrentException {
         String commitId = "19873";
         int repositoryId = 124;
         when(ref.getLatestCommit()).thenReturn(commitId);
@@ -84,7 +84,9 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
         runValidatorWrapper();
 
         verify(executorBuilder).build(any(), keyMapFuncCaptor.capture(), any());
-        assertThat(keyMapFuncCaptor.getValue().apply(ref), is(repositoryId + "/" + commitId));
+        assertThat(
+                keyMapFuncCaptor.getValue().apply(ref, params),
+                is(repositoryId + "/" + commitId + '/' + StringUtils.join(params, ' ')));
     }
 
     @Test
@@ -117,8 +119,6 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapperTest {
     public void doesNotCacheExecutedCorrectlyUnableToLocateDotNetCliExitCodeDotNetFormatExecutions() throws ConcurrentException {
         assertDoesNotCacheExecutedCorrectlyDotNetFormatExecutions(UnableToLocateDotNetCliExitCode);
     }
-
-
 
     @Test
     public void doesCacheExecutedCorrectlyZeroExitCodeDotNetFormatExecutions() throws ConcurrentException {
