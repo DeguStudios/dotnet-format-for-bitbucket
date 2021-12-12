@@ -5,6 +5,7 @@ import com.degustudios.bitbucket.mergechecks.DotnetFormatRefValidator;
 import com.degustudios.dotnetformat.DotnetFormatCommandResult;
 import com.degustudios.executors.IdempotentExecutor;
 import com.degustudios.executors.IdempotentExecutorBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,11 @@ public class IdempotentlyCachedDotnetFormatRefValidatorWrapper implements Dotnet
         }
     }
 
-    private static String mapToKey(RepositoryRef x) {
-        return x.getRepository().getId() + "/" + x.getLatestCommit();
+    private static String mapToKey(RepositoryRef x, List<String> params) {
+        return x.getRepository().getId()
+                + "/"
+                + x.getLatestCommit()
+                + "/"
+                + StringUtils.join(params, ' ');
     }
 }

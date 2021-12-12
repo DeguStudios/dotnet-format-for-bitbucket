@@ -16,10 +16,10 @@ public class IdempotentExecutor<T,R> {
     private final ConcurrentHashMap<String, LazyInitializer<Future<R>>> cache = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final BiFunction<T, List<String>, R> executeFunc;
-    private final Function<T, String> mapToKeyFunc;
+    private final BiFunction<T, List<String>, String> mapToKeyFunc;
     private final Function<R, Boolean> shouldCacheFunc;
 
-    public IdempotentExecutor(BiFunction<T, List<String>, R> executeFunc, Function<T, String> mapToKeyFunc, Function<R, Boolean> shouldCacheFunc) {
+    public IdempotentExecutor(BiFunction<T, List<String>, R> executeFunc, BiFunction<T, List<String>, String> mapToKeyFunc, Function<R, Boolean> shouldCacheFunc) {
         this.executeFunc = executeFunc;
         this.mapToKeyFunc = mapToKeyFunc;
         this.shouldCacheFunc = shouldCacheFunc;
@@ -33,7 +33,7 @@ public class IdempotentExecutor<T,R> {
     private LazyInitializer<Future<R>> getEarliestScheduledLazyTaskFor(T param1, List<String> param2) {
         LazyInitializer<Future<R>> justScheduledLazyTask = wrapWithLazy((() -> scheduleForExecution(param1, param2)));
         LazyInitializer<Future<R>> earlierScheduledLazyTask = cache.putIfAbsent(
-                mapToKeyFunc.apply(param1),
+                mapToKeyFunc.apply(param1, param2),
                 justScheduledLazyTask);
 
         if (earlierScheduledLazyTask != null) {
@@ -56,7 +56,7 @@ public class IdempotentExecutor<T,R> {
         return executor.submit(() -> {
             R result = executeFunc.apply(param1, param2);
             if (!Boolean.TRUE.equals(shouldCacheFunc.apply(result))) {
-                cache.remove(mapToKeyFunc.apply(param1));
+                cache.remove(mapToKeyFunc.apply(param1, param2));
             }
             return result;
         });
